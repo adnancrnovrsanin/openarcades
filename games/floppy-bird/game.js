@@ -235,6 +235,9 @@
     update: function (_time, delta) {
       if (this.gameOver) return
 
+      // Cap delta to prevent large jumps when the browser throttles
+      // the frame rate (e.g. tab switch, iframe throttling, slow device)
+      if (delta > 100) delta = 100
       var dt = delta / 1000
 
       if (!this.started) {
@@ -298,6 +301,16 @@
     spawnPipe: function () {
       var w = this.gameW
       var h = this.groundY
+
+      // Prevent overlapping pipes when the timer fires multiple times
+      // after a large delta spike (e.g. returning from an inactive tab)
+      if (this.pipeGraphics.length > 0) {
+        var lastPipe = this.pipeGraphics[this.pipeGraphics.length - 1]
+        if (lastPipe.x > w - PIPE_SPACING) {
+          return
+        }
+      }
+
       var minTop = 80
       var maxTop = h - PIPE_GAP - 80
       var topHeight = Phaser.Math.Between(minTop, maxTop)
@@ -650,5 +663,5 @@
     },
   }
 
-  window.__phaserGame = new Phaser.Game(config)
+  new Phaser.Game(config)
 })()
