@@ -175,8 +175,7 @@
       this.bgGraphics.fillStyle(SKY_TOP)
       this.bgGraphics.fillRect(0, 0, w, h)
 
-      // Pipes group
-      this.pipes = this.add.group()
+      // Pipes
       this.pipeGraphics = []
 
       // Bird physics body (use a zone for collision)
@@ -229,9 +228,6 @@
       // Pipe timer — doesn't start until first flap
       this.pipeTimer = null
 
-      // Track scored pipes
-      this.scoredPipes = new Set()
-
       // Handle resize
       this.scale.on("resize", this.onResize, this)
     },
@@ -261,7 +257,6 @@
 
       // Moving pipes
       var speed = PIPE_SPEED * dt
-      var self = this
       this.pipeGraphics.forEach(function (pipe) {
         pipe.x += speed
       })
@@ -311,25 +306,26 @@
       var lipExtra = 6
 
       var g = this.add.graphics()
+      g.x = w
 
       // Top pipe body
       g.fillStyle(PIPE_COLOR)
-      g.fillRect(w, 0, PIPE_WIDTH, topHeight)
+      g.fillRect(0, 0, PIPE_WIDTH, topHeight)
       // Top pipe dark edge
       g.fillStyle(PIPE_DARK)
-      g.fillRect(w, 0, 4, topHeight)
-      g.fillRect(w + PIPE_WIDTH - 4, 0, 4, topHeight)
+      g.fillRect(0, 0, 4, topHeight)
+      g.fillRect(PIPE_WIDTH - 4, 0, 4, topHeight)
       // Top pipe lip
       g.fillStyle(PIPE_LIP_COLOR)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         topHeight - lipHeight,
         PIPE_WIDTH + lipExtra * 2,
         lipHeight
       )
       g.fillStyle(PIPE_DARK)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         topHeight - lipHeight,
         PIPE_WIDTH + lipExtra * 2,
         3
@@ -337,23 +333,22 @@
 
       // Bottom pipe body
       g.fillStyle(PIPE_COLOR)
-      g.fillRect(w, bottomY, PIPE_WIDTH, h - bottomY)
+      g.fillRect(0, bottomY, PIPE_WIDTH, h - bottomY)
       // Bottom pipe dark edge
       g.fillStyle(PIPE_DARK)
-      g.fillRect(w, bottomY, 4, h - bottomY)
-      g.fillRect(w + PIPE_WIDTH - 4, bottomY, 4, h - bottomY)
+      g.fillRect(0, bottomY, 4, h - bottomY)
+      g.fillRect(PIPE_WIDTH - 4, bottomY, 4, h - bottomY)
       // Bottom pipe lip
       g.fillStyle(PIPE_LIP_COLOR)
-      g.fillRect(w - lipExtra, bottomY, PIPE_WIDTH + lipExtra * 2, lipHeight)
+      g.fillRect(-lipExtra, bottomY, PIPE_WIDTH + lipExtra * 2, lipHeight)
       g.fillStyle(PIPE_DARK)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         bottomY + lipHeight - 3,
         PIPE_WIDTH + lipExtra * 2,
         3
       )
 
-      g.setData("pipeX", w)
       g.setData("topHeight", topHeight)
       g.setData("bottomY", bottomY)
       g.setData("scored", false)
@@ -369,14 +364,8 @@
       var birdRight = this.birdX + BIRD_RADIUS
       var self = this
       this.pipeGraphics.forEach(function (pipe) {
-        var pipeRight =
-          pipe.x + pipe.getData("pipeX") - pipe.getData("pipeX") + PIPE_WIDTH
-        // Actual pipe right edge (pipe.x is the offset from original position, but we drew at getData("pipeX"))
-        // Since we move pipe.x directly, the drawn coordinates are relative to the graphics object origin.
-        // The pipe was drawn at world x = getData("pipeX"), but the graphics object x is now pipe.x
-        // So actual left edge = pipe.x, actual right edge = pipe.x + PIPE_WIDTH
-        var actualRight = pipe.x + PIPE_WIDTH
-        if (!pipe.getData("scored") && actualRight < birdRight) {
+        var pipeRight = pipe.x + PIPE_WIDTH
+        if (!pipe.getData("scored") && pipeRight < birdRight) {
           pipe.setData("scored", true)
           self.score++
           self.scoreText.setText(self.score.toString())
@@ -445,7 +434,6 @@
 
     drawGround: function () {
       var w = this.gameW
-      var h = this.gameH
       var g = this.groundGraphics
       g.clear()
       g.fillStyle(GROUND_COLOR)
