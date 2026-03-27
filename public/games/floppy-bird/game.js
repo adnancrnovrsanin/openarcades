@@ -11,7 +11,7 @@
   var PIPE_WIDTH = 52
   var BIRD_RADIUS = 15
   var GROUND_HEIGHT = 80
-  var MAX_DELTA = 100
+  var MAX_DELTA = 100 // ms
 
   // ─── Colors ──────────────────────────────────────────────────
   var SKY_TOP = 0x4ec0ca
