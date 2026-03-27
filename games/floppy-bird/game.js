@@ -311,25 +311,26 @@
       var lipExtra = 6
 
       var g = this.add.graphics()
+      g.x = w
 
       // Top pipe body
       g.fillStyle(PIPE_COLOR)
-      g.fillRect(w, 0, PIPE_WIDTH, topHeight)
+      g.fillRect(0, 0, PIPE_WIDTH, topHeight)
       // Top pipe dark edge
       g.fillStyle(PIPE_DARK)
-      g.fillRect(w, 0, 4, topHeight)
-      g.fillRect(w + PIPE_WIDTH - 4, 0, 4, topHeight)
+      g.fillRect(0, 0, 4, topHeight)
+      g.fillRect(PIPE_WIDTH - 4, 0, 4, topHeight)
       // Top pipe lip
       g.fillStyle(PIPE_LIP_COLOR)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         topHeight - lipHeight,
         PIPE_WIDTH + lipExtra * 2,
         lipHeight
       )
       g.fillStyle(PIPE_DARK)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         topHeight - lipHeight,
         PIPE_WIDTH + lipExtra * 2,
         3
@@ -337,17 +338,17 @@
 
       // Bottom pipe body
       g.fillStyle(PIPE_COLOR)
-      g.fillRect(w, bottomY, PIPE_WIDTH, h - bottomY)
+      g.fillRect(0, bottomY, PIPE_WIDTH, h - bottomY)
       // Bottom pipe dark edge
       g.fillStyle(PIPE_DARK)
-      g.fillRect(w, bottomY, 4, h - bottomY)
-      g.fillRect(w + PIPE_WIDTH - 4, bottomY, 4, h - bottomY)
+      g.fillRect(0, bottomY, 4, h - bottomY)
+      g.fillRect(PIPE_WIDTH - 4, bottomY, 4, h - bottomY)
       // Bottom pipe lip
       g.fillStyle(PIPE_LIP_COLOR)
-      g.fillRect(w - lipExtra, bottomY, PIPE_WIDTH + lipExtra * 2, lipHeight)
+      g.fillRect(-lipExtra, bottomY, PIPE_WIDTH + lipExtra * 2, lipHeight)
       g.fillStyle(PIPE_DARK)
       g.fillRect(
-        w - lipExtra,
+        -lipExtra,
         bottomY + lipHeight - 3,
         PIPE_WIDTH + lipExtra * 2,
         3
