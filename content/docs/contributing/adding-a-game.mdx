@@ -1,0 +1,72 @@
+---
+title: Adding a Game
+description: Step-by-step guide to contributing a game to OpenArcades.
+---
+
+## Overview
+
+Adding a game to OpenArcades involves creating a self-contained game bundle and a metadata file, then opening a pull request.
+
+## Step 1: Create Your Game Folder
+
+Create a new folder inside `games/` with a URL-friendly name:
+
+```
+games/my-awesome-game/
+```
+
+## Step 2: Add Your Game Files
+
+Your game folder should contain at minimum:
+
+```
+games/my-awesome-game/
+├── index.html    # Entry point
+├── meta.json     # Game metadata
+├── game.js       # Game logic (optional naming)
+└── style.css     # Styles (optional)
+```
+
+The `index.html` file is loaded inside a sandboxed iframe. It should be a complete, self-contained HTML page.
+
+## Step 3: Create meta.json
+
+Every game requires a `meta.json` file. See the [Metadata Reference](/docs/guides/game-metadata-reference) for the full schema.
+
+```json
+{
+  "id": "my-awesome-game",
+  "title": "My Awesome Game",
+  "description": "A short description of the game.",
+  "category": "casual",
+  "tags": ["canvas", "singleplayer"],
+  "author": "Your Name",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2025-01-01",
+  "controls": "Arrow keys to move, Space to jump"
+}
+```
+
+## Step 4: Test Locally
+
+```bash
+npm run build:games    # Copies your game to public/games/
+npm run dev            # Start dev server
+```
+
+Navigate to your game in the browser and confirm it loads and plays correctly inside the iframe.
+
+## Step 5: Open a Pull Request
+
+1. Fork the repo and push your branch
+2. Open a PR with a clear title like "Add game: My Awesome Game"
+3. Include a screenshot or short GIF of gameplay
+4. Wait for review — maintainers may suggest changes
+
+## Tips
+
+- Keep file sizes small — aim for under 1 MB total per game
+- Test in both light and dark mode (background may change)
+- Ensure your game handles the iframe sandbox restrictions
+- No external network requests — games must work fully offline

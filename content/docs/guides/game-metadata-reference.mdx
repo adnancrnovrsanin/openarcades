@@ -1,0 +1,137 @@
+---
+title: Metadata Reference
+description: Complete reference for the game meta.json schema.
+---
+
+## Overview
+
+Every game in OpenArcades must include a `meta.json` file in its root directory. This file provides the platform with information about your game.
+
+## Schema
+
+```json
+{
+  "id": "string (required)",
+  "title": "string (required)",
+  "description": "string (required)",
+  "thumbnail": "string (optional)",
+  "category": "string (required)",
+  "tags": ["string array (required)"],
+  "author": "string (required)",
+  "version": "string (required)",
+  "license": "string (required)",
+  "createdAt": "string (required)",
+  "controls": "string (optional)"
+}
+```
+
+## Fields
+
+### id
+
+A unique, URL-safe identifier for your game. Use lowercase letters, numbers, and hyphens only.
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"space-invaders"`, `"tic-tac-toe"`
+
+### title
+
+The display name of your game.
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"Space Invaders"`
+
+### description
+
+A short description of your game (1-2 sentences).
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"Defend Earth from waves of alien invaders."`
+
+### thumbnail
+
+Path to a thumbnail image relative to the game folder. Used for the game card.
+
+- **Type:** `string`
+- **Required:** No
+- **Example:** `"thumbnail.png"`
+
+### category
+
+The primary category for your game. Must be one of:
+
+| Value | Description |
+| --- | --- |
+| `puzzle` | Logic and puzzle games |
+| `action` | Fast-paced action games |
+| `casual` | Relaxed, easy-to-play games |
+| `strategy` | Turn-based or strategic games |
+| `other` | Games that don't fit other categories |
+
+### tags
+
+An array of tags describing your game. Use for discoverability.
+
+- **Type:** `string[]`
+- **Required:** Yes
+- **Example:** `["canvas", "singleplayer", "retro"]`
+
+### author
+
+Your name or username.
+
+- **Type:** `string`
+- **Required:** Yes
+
+### version
+
+Semantic version of your game.
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"1.0.0"`
+
+### license
+
+The license your game is released under.
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"MIT"`
+
+### createdAt
+
+The date the game was created, in `YYYY-MM-DD` format.
+
+- **Type:** `string`
+- **Required:** Yes
+- **Example:** `"2025-01-15"`
+
+### controls
+
+A description of the game controls. Shown to players on the game page.
+
+- **Type:** `string`
+- **Required:** No
+- **Example:** `"Arrow keys to move, Space to shoot"`
+
+## Complete Example
+
+```json
+{
+  "id": "brick-breaker",
+  "title": "Brick Breaker",
+  "description": "Classic breakout-style game. Destroy all the bricks to win!",
+  "thumbnail": "thumbnail.png",
+  "category": "action",
+  "tags": ["canvas", "retro", "singleplayer"],
+  "author": "Jane Developer",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2025-02-20",
+  "controls": "Mouse or arrow keys to move the paddle"
+}
+```

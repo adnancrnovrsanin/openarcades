@@ -1,0 +1,58 @@
+---
+title: Quick Start
+description: Get OpenArcades running on your local machine in minutes.
+---
+
+## Prerequisites
+
+- **Node.js** 18 or later
+- **npm** (included with Node.js)
+- **Git**
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/your-org/openarcades.git
+cd openarcades
+```
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
+## Start the Development Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. You should see the OpenArcades landing page.
+
+## Project Structure
+
+```
+openarcades/
+├── app/              # Next.js App Router pages
+├── components/       # React components
+├── content/docs/     # MDX documentation
+├── games/            # Game source bundles
+├── lib/              # Utilities and configuration
+└── public/           # Static assets
+```
+
+## Building for Production
+
+```bash
+npm run build:games   # Copy games to public/
+npm run build         # Build the Next.js app
+npm start             # Start the production server
+```
+
+## What's Next?
+
+Now that you're up and running, explore the docs:
+
+- [Contributing Overview](/docs/contributing) — learn how to contribute
+- [Game Development Guide](/docs/guides/game-development) — build your first game

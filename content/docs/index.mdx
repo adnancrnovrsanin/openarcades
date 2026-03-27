@@ -1,0 +1,27 @@
+---
+title: Introduction
+description: Welcome to OpenArcades — an open-source browser arcade platform.
+---
+
+## What is OpenArcades?
+
+OpenArcades is a community-driven platform for simple, fun browser games. Built with modern web technologies, it provides a showcase for 2D games that run directly in the browser — no downloads, no installs.
+
+## Why OpenArcades?
+
+- **Open source** — every game and the platform itself is free and open
+- **Browser native** — games run in a sandboxed iframe, powered by HTML5 Canvas or vanilla JS
+- **Community driven** — anyone can contribute a game via pull request
+- **Modern stack** — built with Next.js, Tailwind CSS, and shadcn/ui
+
+## How It Works
+
+Games are self-contained HTML/JS/CSS bundles living in the `games/` directory. When the project builds, games are copied to `public/games/` and served as static assets inside sandboxed iframes.
+
+Each game includes a `meta.json` file describing its title, author, category, and more. The platform reads this metadata to populate the game catalog automatically.
+
+## Next Steps
+
+- [Quick Start](/docs/getting-started) — get the project running locally
+- [Adding a Game](/docs/contributing/adding-a-game) — contribute your first game
+- [Game Development Guide](/docs/guides/game-development) — tips for building browser games

@@ -1,0 +1,12 @@
+{
+  "id": "floppy-bird",
+  "title": "Floppy Bird",
+  "description": "Navigate a bird through gaps in pipes by tapping to flap. A classic arcade-style game built with Phaser.",
+  "category": "action",
+  "tags": ["phaser", "singleplayer", "arcade", "canvas"],
+  "author": "OpenArcades",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2026-03-27",
+  "controls": "Space / Click / Tap to flap"
+}

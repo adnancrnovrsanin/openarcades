@@ -1,0 +1,67 @@
+---
+title: Game Requirements
+description: Technical requirements and standards for games on OpenArcades.
+---
+
+## General Requirements
+
+All games submitted to OpenArcades must meet these minimum standards:
+
+### Self-Contained
+
+Games must be fully self-contained. All assets (images, sounds, fonts) must be included in the game folder. No external CDN links or network requests are allowed.
+
+### Sandboxed Iframe
+
+Games run inside an iframe with `sandbox="allow-scripts"`. This means:
+
+- **JavaScript is allowed** — your game logic runs normally
+- **No form submissions** — forms won't work
+- **No popups** — `window.open()` is blocked
+- **No top-level navigation** — links that try to navigate the parent page are blocked
+- **Same-origin only** — no cross-origin requests
+
+### Entry Point
+
+The game must have an `index.html` file as its entry point. This file is loaded directly in the iframe.
+
+## Technical Standards
+
+### Performance
+
+- Target 60 FPS on mid-range hardware
+- Avoid memory leaks — clean up event listeners and animation frames
+- Keep total bundle size under 1 MB
+
+### Accessibility
+
+- Support keyboard controls (mouse-only is acceptable but keyboard is preferred)
+- Use sufficient color contrast
+- Document all controls in `meta.json`
+
+### Browser Support
+
+Games should work in the latest versions of:
+
+- Chrome / Edge
+- Firefox
+- Safari
+
+### Code Quality
+
+- No minified or obfuscated source code
+- Include comments for complex logic
+- Use standard HTML5, CSS3, and ES6+ JavaScript
+- No build tools required — the game folder runs as-is
+
+## Metadata
+
+Every game must include a valid `meta.json` file. See the [Metadata Reference](/docs/guides/game-metadata-reference) for the full schema.
+
+## What's Not Allowed
+
+- Games with violent, hateful, or inappropriate content
+- Games that attempt to break out of the iframe sandbox
+- Games that collect user data or make network requests
+- Games with copyrighted assets used without permission
+- Minified-only submissions — source code must be readable

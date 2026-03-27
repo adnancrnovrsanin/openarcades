@@ -1,0 +1,140 @@
+---
+title: Game Development Guide
+description: Tips and techniques for building browser games for OpenArcades.
+---
+
+## Getting Started
+
+Browser games for OpenArcades are simple HTML5 games that run in an iframe. You have full access to the Canvas API, DOM manipulation, and modern JavaScript.
+
+## Recommended Approach
+
+### HTML5 Canvas
+
+The most common approach for 2D games:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #1a1a2e; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <script src="game.js"></script>
+</body>
+</html>
+```
+
+### Game Loop
+
+Use `requestAnimationFrame` for smooth rendering:
+
+```javascript
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+function gameLoop(timestamp) {
+  update(timestamp);
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+function update(timestamp) {
+  // Game logic here
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Draw game objects here
+}
+
+requestAnimationFrame(gameLoop);
+```
+
+## Input Handling
+
+### Keyboard
+
+```javascript
+const keys = {};
+
+window.addEventListener("keydown", (e) => {
+  keys[e.code] = true;
+  e.preventDefault();
+});
+
+window.addEventListener("keyup", (e) => {
+  keys[e.code] = false;
+});
+
+// In your update function:
+if (keys["ArrowLeft"]) player.x -= speed;
+if (keys["ArrowRight"]) player.x += speed;
+```
+
+### Touch (Mobile)
+
+```javascript
+canvas.addEventListener("touchstart", (e) => {
+  const touch = e.touches[0];
+  handleInput(touch.clientX, touch.clientY);
+  e.preventDefault();
+});
+```
+
+## Responsive Sizing
+
+Handle window resizes so the game fills the iframe:
+
+```javascript
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resize);
+resize();
+```
+
+## State Management
+
+Keep your game organized with a simple state machine:
+
+```javascript
+const State = { MENU: "menu", PLAYING: "playing", GAMEOVER: "gameover" };
+let currentState = State.MENU;
+
+function update(timestamp) {
+  switch (currentState) {
+    case State.MENU:
+      updateMenu();
+      break;
+    case State.PLAYING:
+      updateGame(timestamp);
+      break;
+    case State.GAMEOVER:
+      updateGameOver();
+      break;
+  }
+}
+```
+
+## Best Practices
+
+- **Keep it simple** — the best arcade games have simple, addictive mechanics
+- **Start small** — get a basic prototype working first, then iterate
+- **Test at different sizes** — the iframe may be resized or fullscreened
+- **Clean up resources** — cancel animation frames and remove listeners when appropriate
+- **Use `const` and `let`** — avoid `var` for better scoping
+- **No external dependencies** — your game must be fully self-contained
