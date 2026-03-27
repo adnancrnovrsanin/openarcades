@@ -30,6 +30,7 @@
   var PARTICLE_COUNT = 14
   var MAX_DELTA = 0.05 // cap delta at 50ms
   var GRID_SPACING = 50
+  var MAX_JUMPS = 2
 
   // ─── Colors ────────────────────────────────────────────────────────
   var CLR_BG = "#0a0a1a"
@@ -93,6 +94,11 @@
     playTone(680, 0.06, 0.05, "sine")
   }
 
+  function sfxDoubleJump() {
+    playTone(700, 0.07, 0.07, "square")
+    playTone(920, 0.06, 0.05, "sine")
+  }
+
   function sfxScore() {
     playTone(880, 0.1, 0.06, "sine")
     playTone(1100, 0.08, 0.04, "sine")
@@ -120,6 +126,7 @@
     rotation: 0,
     grounded: true,
     alive: true,
+    jumpsLeft: MAX_JUMPS,
   }
 
   var obstacles = []
@@ -175,6 +182,7 @@
     player.rotation = 0
     player.grounded = true
     player.alive = true
+    player.jumpsLeft = MAX_JUMPS
 
     score = 0
     distance = 0
@@ -192,13 +200,13 @@
   }
 
   // ─── Obstacle spawning ────────────────────────────────────────────
-  // Obstacle types: "spike" (triangle), "block" (tall rectangle),
-  // "double_spike" (two spikes in a row)
+  // Obstacle types: "spike" (triangle), "block" (platform rectangle)
+  // Blocks are landable platforms; only spikes kill.
   function spawnObstacle() {
     var r = Math.random()
     var difficulty = clamp(elapsed / 60, 0, 1) // 0→1 over 60s
 
-    if (r < 0.45) {
+    if (r < 0.3) {
       // Single spike
       var spikeH = Math.round(playerSize * (0.8 + difficulty * 0.4))
       var spikeW = Math.round(spikeH * 0.9)
@@ -209,10 +217,10 @@
         w: spikeW,
         h: spikeH,
       })
-    } else if (r < 0.7) {
-      // Block (tall rectangle to jump over)
-      var blockH = Math.round(playerSize * (1.0 + difficulty * 0.6))
-      var blockW = Math.round(playerSize * (0.6 + Math.random() * 0.4))
+    } else if (r < 0.45) {
+      // Block (platform to land on or jump over)
+      var blockH = Math.round(playerSize * (0.7 + difficulty * 0.4))
+      var blockW = Math.round(playerSize * (0.8 + Math.random() * 0.6))
       obstacles.push({
         type: "block",
         x: W + 20,
@@ -220,7 +228,7 @@
         w: blockW,
         h: blockH,
       })
-    } else if (r < 0.85) {
+    } else if (r < 0.6) {
       // Double spike (two spikes with small gap)
       var dSpikeH = Math.round(playerSize * (0.7 + difficulty * 0.3))
       var dSpikeW = Math.round(dSpikeH * 0.9)
@@ -239,12 +247,12 @@
         w: dSpikeW,
         h: dSpikeH,
       })
-    } else {
+    } else if (r < 0.72) {
       // Spike + block combo
       var cSpikeH = Math.round(playerSize * (0.7 + difficulty * 0.3))
       var cSpikeW = Math.round(cSpikeH * 0.9)
-      var cBlockH = Math.round(playerSize * (1.0 + difficulty * 0.3))
-      var cBlockW = Math.round(playerSize * 0.6)
+      var cBlockH = Math.round(playerSize * (0.7 + difficulty * 0.3))
+      var cBlockW = Math.round(playerSize * 0.8)
       var cGap = Math.round(playerSize * (1.2 + Math.random() * 0.6))
       obstacles.push({
         type: "spike",
@@ -259,6 +267,54 @@
         y: groundY - cBlockH,
         w: cBlockW,
         h: cBlockH,
+      })
+    } else if (r < 0.86) {
+      // Spike on block (block platform with spike on top — must clear both)
+      var sbBlockH = Math.round(playerSize * 0.7)
+      var sbBlockW = Math.round(playerSize * 0.9)
+      var sbSpikeH = Math.round(playerSize * (0.6 + difficulty * 0.3))
+      var sbSpikeW = Math.round(sbSpikeH * 0.9)
+      obstacles.push({
+        type: "block",
+        x: W + 20,
+        y: groundY - sbBlockH,
+        w: sbBlockW,
+        h: sbBlockH,
+      })
+      obstacles.push({
+        type: "spike",
+        x: W + 20 + (sbBlockW - sbSpikeW) / 2,
+        y: groundY - sbBlockH - sbSpikeH,
+        w: sbSpikeW,
+        h: sbSpikeH,
+      })
+    } else {
+      // Block → spike → block (land on block, double-jump over spike, land on next)
+      var bgBlockH = Math.round(playerSize * 0.5)
+      var bgBlockW = Math.round(playerSize * 1.2)
+      var bgSpikeH = Math.round(playerSize * (0.7 + difficulty * 0.2))
+      var bgSpikeW = Math.round(bgSpikeH * 0.9)
+      var bgGap = Math.round(playerSize * 0.9)
+      obstacles.push({
+        type: "block",
+        x: W + 20,
+        y: groundY - bgBlockH,
+        w: bgBlockW,
+        h: bgBlockH,
+      })
+      obstacles.push({
+        type: "spike",
+        x: W + 20 + bgBlockW + bgGap,
+        y: groundY - bgSpikeH,
+        w: bgSpikeW,
+        h: bgSpikeH,
+      })
+      obstacles.push({
+        type: "block",
+        x: W + 20 + bgBlockW + bgGap + bgSpikeW + bgGap,
+        y: groundY - bgBlockH,
+        w: bgBlockW,
+        h: bgBlockH,
       })
     }
 
@@ -369,7 +425,7 @@
       return
     }
 
-    if (state === STATE_PLAY && player.grounded) {
+    if (state === STATE_PLAY && player.jumpsLeft > 0) {
       jumpPressed = true
     }
   }
@@ -410,17 +466,29 @@
     }
 
     // Jump
-    if (jumpPressed && player.grounded) {
+    if (jumpPressed && player.jumpsLeft > 0) {
+      var isAirJump = !player.grounded
       player.vy = JUMP_VELOCITY
       player.grounded = false
+      player.jumpsLeft--
       jumpPressed = false
-      sfxJump()
-      emitParticles(
-        player.x + playerSize / 2,
-        groundY,
-        CLR_PLAYER,
-        6
-      )
+      if (isAirJump) {
+        sfxDoubleJump()
+        emitParticles(
+          player.x + playerSize / 2,
+          player.y + playerSize,
+          CLR_PARTICLE,
+          8
+        )
+      } else {
+        sfxJump()
+        emitParticles(
+          player.x + playerSize / 2,
+          groundY,
+          CLR_PLAYER,
+          6
+        )
+      }
     }
     jumpPressed = false
 
@@ -435,15 +503,10 @@
       player.y = groundY - playerSize
       player.vy = 0
       player.grounded = true
-    }
-
-    // Rotation (spin while in air)
-    if (!player.grounded) {
-      player.rotation += dt * 8
+      player.jumpsLeft = MAX_JUMPS
     } else {
-      // Snap rotation to nearest 90°
-      var target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2)
-      player.rotation = lerp(player.rotation, target, Math.min(1, dt * 20))
+      // Not on ground — will be re-set if landing on a block
+      player.grounded = false
     }
 
     // Scroll obstacles
@@ -471,29 +534,47 @@
     var ps = playerSize
     for (var i = 0; i < obstacles.length; i++) {
       var obs = obstacles[i]
-      var hit = false
 
       if (obs.type === "spike") {
-        hit = spikeHitsPlayer(obs, px, py, ps)
+        if (spikeHitsPlayer(obs, px, py, ps)) {
+          die()
+          return
+        }
       } else {
-        // Block: rect vs rect with slight shrink
-        var shrink = ps * 0.1
-        hit = rectsOverlap(
-          px + shrink,
-          py + shrink,
-          ps - shrink * 2,
-          ps - shrink * 2,
-          obs.x,
-          obs.y,
-          obs.w,
-          obs.h
-        )
-      }
+        // Block: landable platform — landing on top is safe, side hits kill
+        var playerRight = px + ps
+        var playerBottom = py + ps
+        var blockLeft = obs.x
+        var blockRight = obs.x + obs.w
+        var blockTop = obs.y
 
-      if (hit) {
-        die()
-        return
+        var hOverlap = playerRight > blockLeft + 2 && px < blockRight - 2
+        var vOverlap = playerBottom >= blockTop && py < obs.y + obs.h
+
+        if (hOverlap && vOverlap) {
+          var prevBottom = playerBottom - player.vy * dt
+          if (prevBottom <= blockTop + 6) {
+            // Landing on top of block
+            player.y = blockTop - ps
+            py = player.y
+            player.vy = 0
+            player.grounded = true
+            player.jumpsLeft = MAX_JUMPS
+          } else {
+            // Side / bottom hit
+            die()
+            return
+          }
+        }
       }
+    }
+
+    // Rotation (spin while in air, snap when grounded)
+    if (!player.grounded) {
+      player.rotation += dt * 8
+    } else {
+      var target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2)
+      player.rotation = lerp(player.rotation, target, Math.min(1, dt * 20))
     }
 
     // Timers
@@ -613,7 +694,7 @@
         ctx.lineWidth = 1
         ctx.stroke()
       } else {
-        // Block
+        // Block (platform)
         ctx.shadowColor = CLR_BLOCK_GLOW
         ctx.shadowBlur = 8
         ctx.fillStyle = CLR_BLOCK
@@ -624,6 +705,14 @@
         ctx.strokeStyle = "#ff8855"
         ctx.lineWidth = 1
         ctx.strokeRect(obs.x, obs.y, obs.w, obs.h)
+
+        // Platform indicator (green top line)
+        ctx.strokeStyle = "#66ff88"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(obs.x, obs.y)
+        ctx.lineTo(obs.x + obs.w, obs.y)
+        ctx.stroke()
       }
     }
 
@@ -667,6 +756,25 @@
       ctx.restore()
     }
 
+    // Jump indicator dots (below player)
+    if (state === STATE_PLAY) {
+      var dotR = Math.max(2, playerSize * 0.08)
+      var dotGap = dotR * 3
+      var dotBaseX = player.x + playerSize / 2 - dotGap / 2
+      var dotY = player.y + playerSize + dotR * 3
+      if (dotY > groundY - dotR) dotY = groundY - dotR
+      for (var ji = 0; ji < MAX_JUMPS; ji++) {
+        ctx.beginPath()
+        ctx.arc(dotBaseX + ji * dotGap, dotY, dotR, 0, Math.PI * 2)
+        if (ji < player.jumpsLeft) {
+          ctx.fillStyle = CLR_PLAYER
+        } else {
+          ctx.fillStyle = "rgba(255,255,255,0.15)"
+        }
+        ctx.fill()
+      }
+    }
+
     // Particles
     for (var i = 0; i < particles.length; i++) {
       var p = particles[i]
@@ -705,7 +813,7 @@
       // Subtitle
       ctx.fillStyle = "#aaa"
       ctx.font = Math.round(fontSize * 0.9) + "px monospace"
-      ctx.fillText("Tap / Click / Space to start", W / 2, H * 0.3 + fontSize * 2)
+      ctx.fillText("Tap / Click / Space to jump (x2!)", W / 2, H * 0.3 + fontSize * 2)
 
       // Draw a demo player cube
       ctx.save()

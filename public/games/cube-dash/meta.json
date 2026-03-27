@@ -1,12 +1,12 @@
 {
   "id": "cube-dash",
   "title": "Cube Dash",
-  "description": "Jump over spikes and obstacles in this fast-paced endless runner. A simplified Geometry Dash-inspired arcade game with simple geometric graphics.",
+  "description": "Jump and double-jump over spikes, land on block platforms, and survive increasingly complex obstacle patterns in this fast-paced endless runner.",
   "category": "action",
   "tags": ["canvas", "singleplayer", "arcade", "platformer"],
   "author": "OpenArcades",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "MIT",
   "createdAt": "2026-03-27",
-  "controls": "Space / Click / Tap to jump"
+  "controls": "Space / Click / Tap to jump (double-jump in mid-air!)"
 }
