@@ -65,6 +65,13 @@
         /* audio unsupported */
       }
     }
+    if (audioCtx && audioCtx.state === "suspended") {
+      try {
+        audioCtx.resume()
+      } catch (e) {
+        /* ignore resume errors */
+      }
+    }
   }
 
   function playTone(freq, dur, vol, type) {
@@ -142,6 +149,7 @@
   // Obstacles
   var obstacles = []
   var distToNextSpawn = 0
+  var obstacleGroupId = 0
 
   // Particles
   var particles = []
@@ -204,6 +212,7 @@
     particles = []
     trail = []
     distToNextSpawn = SPAWN_DIST_MIN
+    obstacleGroupId = 0
 
     initStars()
   }
@@ -213,6 +222,9 @@
     var corridorH = wallBot - wallTop
     var obsW = Math.round(W * rand(OBS_WIDTH_MIN, OBS_WIDTH_MAX))
     var obsH = Math.round(corridorH * rand(OBS_HEIGHT_MIN, OBS_HEIGHT_MAX))
+
+    // Each spawn gets a unique group ID so gap pairs score as one
+    var group = ++obstacleGroupId
 
     // decide: from floor, ceiling, or both (gap pair)
     var r = Math.random()
@@ -226,6 +238,7 @@
         w: obsW,
         h: obsH,
         scored: false,
+        group: group,
       })
     } else if (r < 0.65 + difficulty * 0.1) {
       // ceiling obstacle
@@ -235,6 +248,7 @@
         w: obsW,
         h: obsH,
         scored: false,
+        group: group,
       })
     } else {
       // gap pair — obstacle from both sides with a gap
@@ -249,6 +263,7 @@
           w: obsW,
           h: topH,
           scored: false,
+          group: group,
         })
       }
       // bottom part
@@ -261,6 +276,7 @@
           w: obsW,
           h: botH,
           scored: false,
+          group: group,
         })
       }
     }
@@ -397,12 +413,16 @@
     for (var i = obstacles.length - 1; i >= 0; i--) {
       obstacles[i].x -= scrollDist
 
-      // Score: passed player
+      // Score: passed player (once per group)
       if (
         !obstacles[i].scored &&
         obstacles[i].x + obstacles[i].w < player.x
       ) {
-        obstacles[i].scored = true
+        var g = obstacles[i].group
+        // Mark all obstacles in the same group as scored
+        for (var j = 0; j < obstacles.length; j++) {
+          if (obstacles[j].group === g) obstacles[j].scored = true
+        }
         score++
         displayScore = score
         if (score % 10 === 0) sfxScore()
@@ -475,6 +495,7 @@
     // Timers
     shakeTimer = Math.max(0, shakeTimer - dt)
     nearMissTimer = Math.max(0, nearMissTimer - dt)
+    if (nearMissTimer === 0 && nearMissCombo > 0) nearMissCombo = 0
     flashTimer = Math.max(0, flashTimer - dt)
 
     // Update particles & stars
@@ -495,7 +516,17 @@
       try {
         localStorage.setItem("wallflip_hi", String(highScore))
       } catch (e) {
-        /* storage unavailable */
+        /* storage unavailable (e.g. sandboxed iframe) */
+      }
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(
+            { type: "wallflip_highscore", score: highScore },
+            "*"
+          )
+        }
+      } catch (e) {
+        /* postMessage unavailable */
       }
     }
 
