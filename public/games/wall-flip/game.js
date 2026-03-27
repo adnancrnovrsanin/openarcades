@@ -67,7 +67,9 @@
     }
     if (audioCtx && audioCtx.state === "suspended") {
       try {
-        audioCtx.resume()
+        audioCtx.resume().catch(function () {
+          /* ignore resume errors */
+        })
       } catch (e) {
         /* ignore resume errors */
       }
