@@ -11,6 +11,7 @@
   var PIPE_WIDTH = 52
   var BIRD_RADIUS = 15
   var GROUND_HEIGHT = 80
+  var MAX_DELTA = 100
 
   // ─── Colors ──────────────────────────────────────────────────
   var SKY_TOP = 0x4ec0ca
@@ -237,12 +238,12 @@
 
       // Cap delta to prevent large jumps when the browser throttles
       // the frame rate (e.g. tab switch, iframe throttling, slow device)
-      if (delta > 100) delta = 100
-      var dt = delta / 1000
+      var safeDelta = Math.min(delta, MAX_DELTA)
+      var dt = safeDelta / 1000
 
       if (!this.started) {
         // Bob the bird gently
-        this.bobTime += delta * 0.003
+        this.bobTime += safeDelta * 0.003
         this.birdY = this.birdBaseY + Math.sin(this.bobTime) * 10
         this.birdContainer.y = this.birdY
         return
