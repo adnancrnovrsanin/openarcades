@@ -208,7 +208,6 @@
         y: groundY - spikeH,
         w: spikeW,
         h: spikeH,
-        scored: false,
       })
     } else if (r < 0.7) {
       // Block (tall rectangle to jump over)
@@ -220,7 +219,6 @@
         y: groundY - blockH,
         w: blockW,
         h: blockH,
-        scored: false,
       })
     } else if (r < 0.85) {
       // Double spike (two spikes with small gap)
@@ -233,7 +231,6 @@
         y: groundY - dSpikeH,
         w: dSpikeW,
         h: dSpikeH,
-        scored: false,
       })
       obstacles.push({
         type: "spike",
@@ -241,7 +238,6 @@
         y: groundY - dSpikeH,
         w: dSpikeW,
         h: dSpikeH,
-        scored: false,
       })
     } else {
       // Spike + block combo
@@ -256,7 +252,6 @@
         y: groundY - cSpikeH,
         w: cSpikeW,
         h: cSpikeH,
-        scored: false,
       })
       obstacles.push({
         type: "block",
@@ -264,7 +259,6 @@
         y: groundY - cBlockH,
         w: cBlockW,
         h: cBlockH,
-        scored: false,
       })
     }
 
@@ -398,6 +392,8 @@
       elapsed += dt
       updateParticles(dt)
       updateStars(dt)
+      shakeTimer = Math.max(0, shakeTimer - dt)
+      flashTimer = Math.max(0, flashTimer - dt)
       return
     }
 
@@ -523,16 +519,6 @@
         localStorage.setItem("cubedash_hi", String(highScore))
       } catch (e) {
         /* storage unavailable (e.g. sandboxed iframe) */
-      }
-      try {
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage(
-            { type: "cubedash_highscore", score: highScore },
-            "*"
-          )
-        }
-      } catch (e) {
-        /* postMessage unavailable */
       }
     }
 
@@ -807,10 +793,7 @@
       canvas.height !== canvas.clientHeight
     ) {
       resize()
-      groundY = Math.round(H * GROUND_FRAC)
-      playerSize = Math.max(16, Math.round(H * PLAYER_SIZE_FRAC))
-      player.x = Math.round(W * PLAYER_X_FRAC)
-      initStars()
+      initGame()
     }
 
     update(dt)
