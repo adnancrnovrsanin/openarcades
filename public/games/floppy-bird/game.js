@@ -11,6 +11,7 @@
   var PIPE_WIDTH = 52
   var BIRD_RADIUS = 15
   var GROUND_HEIGHT = 80
+  var MAX_DELTA = 100 // ms
 
   // ─── Colors ──────────────────────────────────────────────────
   var SKY_TOP = 0x4ec0ca
@@ -235,11 +236,14 @@
     update: function (_time, delta) {
       if (this.gameOver) return
 
-      var dt = delta / 1000
+      // Cap delta to prevent large jumps when the browser throttles
+      // the frame rate (e.g. tab switch, iframe throttling, slow device)
+      var safeDelta = Math.min(delta, MAX_DELTA)
+      var dt = safeDelta / 1000
 
       if (!this.started) {
         // Bob the bird gently
-        this.bobTime += delta * 0.003
+        this.bobTime += safeDelta * 0.003
         this.birdY = this.birdBaseY + Math.sin(this.bobTime) * 10
         this.birdContainer.y = this.birdY
         return
@@ -298,6 +302,16 @@
     spawnPipe: function () {
       var w = this.gameW
       var h = this.groundY
+
+      // Prevent overlapping pipes when the timer fires multiple times
+      // after a large delta spike (e.g. returning from an inactive tab)
+      if (this.pipeGraphics.length > 0) {
+        var lastPipe = this.pipeGraphics[this.pipeGraphics.length - 1]
+        if (lastPipe.x > w - PIPE_SPACING) {
+          return
+        }
+      }
+
       var minTop = 80
       var maxTop = h - PIPE_GAP - 80
       var topHeight = Phaser.Math.Between(minTop, maxTop)
