@@ -9,11 +9,15 @@
   var ctx = canvas.getContext("2d")
   var W, H
 
+  var resizeDirty = false
+
   function resize() {
     W = canvas.width = canvas.clientWidth
     H = canvas.height = canvas.clientHeight
   }
-  window.addEventListener("resize", resize)
+  window.addEventListener("resize", function () {
+    resizeDirty = true
+  })
   resize()
 
   // ─── Constants ─────────────────────────────────────────────────────
@@ -436,6 +440,7 @@
   })
   document.addEventListener("keydown", function (e) {
     if (e.code === "Space" || e.key === " " || e.code === "ArrowUp") {
+      if (e.repeat) return
       e.preventDefault()
       handleInput()
     }
@@ -896,10 +901,8 @@
     }
 
     // Handle resize
-    if (
-      canvas.width !== canvas.clientWidth ||
-      canvas.height !== canvas.clientHeight
-    ) {
+    if (resizeDirty) {
+      resizeDirty = false
       resize()
       initGame()
     }
