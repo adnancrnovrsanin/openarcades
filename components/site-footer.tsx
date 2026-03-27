@@ -8,7 +8,7 @@ export function SiteFooter() {
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} OpenArcades. Open source under
-            MIT.
+            AGPL-3.0.
           </p>
           <nav className="flex items-center gap-4">
             <Link
