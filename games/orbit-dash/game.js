@@ -20,20 +20,37 @@
   window.addEventListener("resize", resize)
 
   // ─── Constants ─────────────────────────────────────────────
-  var BASE_ORBIT_SPEED = 1.8        // radians per second
+  var BASE_ORBIT_SPEED = 1.8        // radians per second (at score 0)
+  var MAX_ORBIT_SPEED = 5.0         // ceiling for orbit speed (at max difficulty)
   var LAUNCH_SPEED_MULT = 5.5       // launch speed = orbitRadius * this
   var NODE_RADIUS = 16              // visual radius of nodes
   var PLAYER_RADIUS = 8             // visual radius of player
-  var CAPTURE_RADIUS_MULT = 5.0     // how close to capture a node
   var BASE_ORBIT_RADIUS = 70        // orbit circle radius
-  var MIN_NODE_DIST = 110           // minimum distance between nodes
-  var MAX_NODE_DIST_MULT = 2.2      // max dist = orbitRadius * this
-  var SPEED_RAMP = 0.025            // speed increase per successful jump
-  var MAX_ORBIT_SPEED = 5.0         // ceiling for orbit speed
   var TRAIL_LENGTH = 18             // player trail length
   var MAX_DELTA = 100               // ms, cap frame delta
-  var COMBO_WINDOW = 1.2            // seconds for perfect timing bonus
-  var MISS_TIMEOUT = 5.0            // seconds before declaring a miss
+
+  // ─── Score-based difficulty range ─────────────────────────
+  // Each pair is [easy_value, hard_value]; interpolated by scoreDifficulty()
+  var CAPTURE_RADIUS_RANGE = [5.0, 2.8]    // capture zone shrinks
+  var AIM_ASSIST_RANGE = [0.55, 0.2]       // aim-assist toward target decreases
+  var MISS_TIMEOUT_RANGE = [5.0, 2.5]      // less time to reach target
+  var COMBO_WINDOW_RANGE = [1.2, 0.5]      // tighter perfect-timing window
+  var MIN_NODE_DIST_RANGE = [110, 140]     // nodes spread further apart
+  var MAX_NODE_DIST_RANGE = [2.2, 3.2]     // max dist multiplier increases
+  var DIFFICULTY_SCORE_CAP = 500            // score at which max difficulty is reached
+
+  // ─── Score difficulty helper ──────────────────────────────
+  function scoreDifficulty() {
+    // Returns 0.0 (easiest) → 1.0 (hardest) based on current score
+    var t = Math.min(score / DIFFICULTY_SCORE_CAP, 1.0)
+    // Smoothstep for gradual ramp (slow start, fast middle, slow end)
+    return t * t * (3 - 2 * t)
+  }
+
+  function diffLerp(range) {
+    var d = scoreDifficulty()
+    return range[0] + (range[1] - range[0]) * d
+  }
 
   // ─── Colors ────────────────────────────────────────────────
   var BG_COLOR = "#0a0a1e"
@@ -270,7 +287,9 @@
 
   // ─── Node generation ──────────────────────────────────────
   function generateNode(fromNode) {
-    var dist = MIN_NODE_DIST + Math.random() * (MAX_NODE_DIST_MULT * orbitRadius)
+    var minDist = diffLerp(MIN_NODE_DIST_RANGE)
+    var maxDistMult = diffLerp(MAX_NODE_DIST_RANGE)
+    var dist = minDist + Math.random() * (maxDistMult * orbitRadius)
     var baseAngle = 0
 
     if (nodes.length >= 2) {
@@ -367,8 +386,8 @@
     var toTargetX = tdx / tDist
     var toTargetY = tdy / tDist
 
-    // Blend: mostly aimed toward target with tangential component
-    var blend = 0.55
+    // Blend: aim-assist decreases with score
+    var blend = diffLerp(AIM_ASSIST_RANGE)
     var launchDirX = tangentX * (1 - blend) + toTargetX * blend
     var launchDirY = tangentY * (1 - blend) + toTargetY * blend
     var ldLen = Math.sqrt(launchDirX * launchDirX + launchDirY * launchDirY)
@@ -416,7 +435,9 @@
     // Update shake
     if (shakeTime > 0) shakeTime -= dt
 
-    // Orbit
+    // Orbit — speed scales with score
+    orbitSpeed = BASE_ORBIT_SPEED + scoreDifficulty() * (MAX_ORBIT_SPEED - BASE_ORBIT_SPEED)
+
     if (player.orbiting) {
       var node = nodes[currentNodeIndex]
       player.angle += orbitSpeed * dt
@@ -433,7 +454,7 @@
       var dx = player.x - target.x
       var dy = player.y - target.y
       var dist = Math.sqrt(dx * dx + dy * dy)
-      var captureR = NODE_RADIUS * CAPTURE_RADIUS_MULT
+      var captureR = NODE_RADIUS * diffLerp(CAPTURE_RADIUS_RANGE)
 
       if (dist < captureR) {
         // Captured!
@@ -447,7 +468,7 @@
 
         // Scoring
         var timeTaken = player.timeSinceLaunch
-        var isPerfect = timeTaken < COMBO_WINDOW
+        var isPerfect = timeTaken < diffLerp(COMBO_WINDOW_RANGE)
         combo++
         if (combo > bestCombo) bestCombo = combo
 
@@ -456,9 +477,6 @@
         var points = pointsBase * comboMult
         if (isPerfect) points = Math.floor(points * 1.5)
         score += points
-
-        // Difficulty ramp
-        orbitSpeed = Math.min(MAX_ORBIT_SPEED, orbitSpeed + SPEED_RAMP)
 
         // Feedback
         sfxCapture()
@@ -489,7 +507,7 @@
       }
 
       // Miss detection - too far from target or timeout
-      if (player.timeSinceLaunch > MISS_TIMEOUT) {
+      if (player.timeSinceLaunch > diffLerp(MISS_TIMEOUT_RANGE)) {
         die()
         return
       }
@@ -499,7 +517,7 @@
       var fdx = player.x - targetFar.x
       var fdy = player.y - targetFar.y
       var farDist = Math.sqrt(fdx * fdx + fdy * fdy)
-      if (farDist > MAX_NODE_DIST_MULT * orbitRadius * 3) {
+      if (farDist > diffLerp(MAX_NODE_DIST_RANGE) * orbitRadius * 3) {
         die()
         return
       }
@@ -836,14 +854,17 @@
       ctx.fillText(combo + "x COMBO", CX, 16 + scoreSize + 4)
     }
 
-    // Speed indicator (small)
-    var speedPct = Math.floor(((orbitSpeed - BASE_ORBIT_SPEED) / (MAX_ORBIT_SPEED - BASE_ORBIT_SPEED)) * 100)
-    if (speedPct > 0) {
+    // Difficulty indicator (small)
+    var diffPct = Math.floor(scoreDifficulty() * 100)
+    if (diffPct > 0) {
       var spdSize = Math.max(10, Math.floor(MIN_DIM * 0.016))
       ctx.font = spdSize + "px Arial, sans-serif"
       ctx.textAlign = "right"
-      ctx.fillStyle = "rgba(255,255,255,0.4)"
-      ctx.fillText("SPEED +" + speedPct + "%", W - 12, 12)
+      var diffColor = diffPct < 30 ? "rgba(0,229,255,0.5)"
+        : diffPct < 60 ? "rgba(255,235,59,0.6)"
+        : "rgba(255,23,68,0.7)"
+      ctx.fillStyle = diffColor
+      ctx.fillText("DIFFICULTY " + diffPct + "%", W - 12, 12)
     }
   }
 
