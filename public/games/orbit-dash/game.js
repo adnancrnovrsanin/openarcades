@@ -20,27 +20,26 @@
   window.addEventListener("resize", resize)
 
   // ─── Constants ─────────────────────────────────────────────
-  var BASE_ORBIT_SPEED = 2.8        // radians per second
+  var BASE_ORBIT_SPEED = 1.8        // radians per second
   var LAUNCH_SPEED_MULT = 5.5       // launch speed = orbitRadius * this
-  var NODE_RADIUS = 14              // visual radius of nodes
+  var NODE_RADIUS = 16              // visual radius of nodes
   var PLAYER_RADIUS = 8             // visual radius of player
-  var CAPTURE_RADIUS_MULT = 3.5     // how close to capture a node
+  var CAPTURE_RADIUS_MULT = 5.0     // how close to capture a node
   var BASE_ORBIT_RADIUS = 70        // orbit circle radius
-  var MIN_NODE_DIST = 120           // minimum distance between nodes
-  var MAX_NODE_DIST_MULT = 3.0      // max dist = orbitRadius * this
-  var SPEED_RAMP = 0.04             // speed increase per successful jump
-  var MAX_ORBIT_SPEED = 7.0         // ceiling for orbit speed
+  var MIN_NODE_DIST = 110           // minimum distance between nodes
+  var MAX_NODE_DIST_MULT = 2.2      // max dist = orbitRadius * this
+  var SPEED_RAMP = 0.025            // speed increase per successful jump
+  var MAX_ORBIT_SPEED = 5.0         // ceiling for orbit speed
   var TRAIL_LENGTH = 18             // player trail length
   var MAX_DELTA = 100               // ms, cap frame delta
-  var COMBO_WINDOW = 0.8            // seconds for perfect timing bonus
-  var MISS_TIMEOUT = 3.0            // seconds before declaring a miss
+  var COMBO_WINDOW = 1.2            // seconds for perfect timing bonus
+  var MISS_TIMEOUT = 5.0            // seconds before declaring a miss
 
   // ─── Colors ────────────────────────────────────────────────
   var BG_COLOR = "#0a0a1e"
   var NODE_COLOR = "#00e5ff"
   var NODE_GLOW = "rgba(0, 229, 255, 0.3)"
   var NODE_NEXT_COLOR = "#ff6e40"
-  var NODE_NEXT_GLOW = "rgba(255, 110, 64, 0.4)"
   var PLAYER_COLOR = "#ffffff"
   var PLAYER_GLOW = "rgba(255, 255, 255, 0.5)"
   var ORBIT_RING_COLOR = "rgba(0, 229, 255, 0.12)"
@@ -368,8 +367,8 @@
     var toTargetX = tdx / tDist
     var toTargetY = tdy / tDist
 
-    // Blend: mostly tangential with some aim-assist toward target
-    var blend = 0.35
+    // Blend: mostly aimed toward target with tangential component
+    var blend = 0.55
     var launchDirX = tangentX * (1 - blend) + toTargetX * blend
     var launchDirY = tangentY * (1 - blend) + toTargetY * blend
     var ldLen = Math.sqrt(launchDirX * launchDirX + launchDirY * launchDirY)
@@ -589,8 +588,8 @@
       ctx.setLineDash([6, 8])
       ctx.moveTo(from.x, from.y)
       ctx.lineTo(to.x, to.y)
-      ctx.strokeStyle = "rgba(255, 110, 64, 0.15)"
-      ctx.lineWidth = 1
+      ctx.strokeStyle = "rgba(255, 110, 64, 0.35)"
+      ctx.lineWidth = 2
       ctx.stroke()
       ctx.setLineDash([])
     }
@@ -600,13 +599,27 @@
       var n = nodes[i]
       var isTarget = (i === targetNodeIndex)
       var isCurrent = (i === currentNodeIndex)
-      var pulseScale = 1 + Math.sin(n.pulse) * 0.1
+      var pulseScale = 1 + Math.sin(n.pulse) * 0.12
+
+      // Target nodes render bigger for visibility
+      var displayR = isTarget ? n.r * 1.5 * pulseScale : n.r * pulseScale
+
+      // Target pulsing ring (large, eye-catching)
+      if (isTarget) {
+        var ringPulse = 1 + Math.sin(n.pulse * 1.5) * 0.3
+        ctx.beginPath()
+        ctx.arc(n.x, n.y, displayR * 3 * ringPulse, 0, Math.PI * 2)
+        ctx.strokeStyle = "rgba(255, 110, 64, " + (0.25 + Math.sin(n.pulse * 1.5) * 0.15) + ")"
+        ctx.lineWidth = 2
+        ctx.stroke()
+      }
 
       // Glow
-      var glowR = n.r * 3 * pulseScale
+      var glowR = isTarget ? displayR * 5 : n.r * 3 * pulseScale
       var gradient = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR)
       if (isTarget) {
-        gradient.addColorStop(0, NODE_NEXT_GLOW)
+        gradient.addColorStop(0, "rgba(255, 110, 64, 0.6)")
+        gradient.addColorStop(0.4, "rgba(255, 110, 64, 0.2)")
         gradient.addColorStop(1, "rgba(255,110,64,0)")
       } else {
         gradient.addColorStop(0, NODE_GLOW)
@@ -619,10 +632,11 @@
 
       // Node body
       ctx.beginPath()
-      ctx.arc(n.x, n.y, n.r * pulseScale, 0, Math.PI * 2)
+      ctx.arc(n.x, n.y, displayR, 0, Math.PI * 2)
       if (isTarget) {
         ctx.fillStyle = NODE_NEXT_COLOR
         ctx.shadowColor = NODE_NEXT_COLOR
+        ctx.shadowBlur = 20
       } else if (isCurrent) {
         ctx.fillStyle = NODE_COLOR
         ctx.shadowColor = NODE_COLOR
@@ -630,13 +644,13 @@
         ctx.fillStyle = n.captured ? "rgba(0,229,255,0.4)" : "rgba(0,229,255,0.6)"
         ctx.shadowColor = NODE_COLOR
       }
-      ctx.shadowBlur = 12
+      ctx.shadowBlur = isTarget ? 20 : 12
       ctx.fill()
       ctx.shadowBlur = 0
 
       // Inner highlight
       ctx.beginPath()
-      ctx.arc(n.x - n.r * 0.25, n.y - n.r * 0.25, n.r * 0.4 * pulseScale, 0, Math.PI * 2)
+      ctx.arc(n.x - displayR * 0.2, n.y - displayR * 0.2, displayR * 0.35, 0, Math.PI * 2)
       ctx.fillStyle = "rgba(255,255,255,0.3)"
       ctx.fill()
     }
@@ -748,6 +762,61 @@
   }
 
   function drawHUD() {
+    // Off-screen arrow pointing to target node
+    if (targetNodeIndex < nodes.length) {
+      var target = nodes[targetNodeIndex]
+      // Convert target world position to screen position
+      var screenX = target.x + camX
+      var screenY = target.y + camY
+      var margin = 50
+      var isOffScreen = screenX < margin || screenX > W - margin || screenY < margin || screenY > H - margin
+
+      if (isOffScreen) {
+        // Draw arrow at edge of screen pointing toward target
+        var dirX = screenX - CX
+        var dirY = screenY - CY
+        var dirLen = Math.sqrt(dirX * dirX + dirY * dirY)
+        if (dirLen > 0) {
+          dirX /= dirLen
+          dirY /= dirLen
+        }
+        // Clamp to screen edge
+        var arrowDist = Math.min(CX - margin, CY - margin)
+        var ax = CX + dirX * arrowDist
+        var ay = CY + dirY * arrowDist
+        // Clamp within bounds
+        ax = Math.max(margin, Math.min(W - margin, ax))
+        ay = Math.max(margin, Math.min(H - margin, ay))
+
+        var arrowAngle = Math.atan2(dirY, dirX)
+        var arrowSize = Math.max(14, MIN_DIM * 0.025)
+        var pulseAlpha = 0.6 + 0.4 * Math.sin(performance.now() / 1000 * 4)
+
+        ctx.save()
+        ctx.translate(ax, ay)
+        ctx.rotate(arrowAngle)
+
+        // Arrow glow
+        ctx.shadowColor = NODE_NEXT_COLOR
+        ctx.shadowBlur = 12
+
+        // Arrow triangle
+        ctx.beginPath()
+        ctx.moveTo(arrowSize, 0)
+        ctx.lineTo(-arrowSize * 0.6, -arrowSize * 0.6)
+        ctx.lineTo(-arrowSize * 0.3, 0)
+        ctx.lineTo(-arrowSize * 0.6, arrowSize * 0.6)
+        ctx.closePath()
+        ctx.globalAlpha = pulseAlpha
+        ctx.fillStyle = NODE_NEXT_COLOR
+        ctx.fill()
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = 1
+
+        ctx.restore()
+      }
+    }
+
     // Score
     var scoreSize = Math.max(24, Math.floor(MIN_DIM * 0.05))
     ctx.font = "bold " + scoreSize + "px Arial, sans-serif"
