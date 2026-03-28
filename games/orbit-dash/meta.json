@@ -1,0 +1,12 @@
+{
+  "id": "orbit-dash",
+  "title": "Orbit Dash",
+  "description": "Launch between orbiting nodes with perfect timing. Chain jumps, build combos, and survive as the pace quickens in this rhythmic arcade challenge.",
+  "category": "action",
+  "tags": ["canvas", "singleplayer", "arcade", "timing"],
+  "author": "OpenArcades",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2026-03-28",
+  "controls": "Click / Tap / Space to launch"
+}
