@@ -70,7 +70,12 @@
   var audioCtx = null
 
   function initAudio() {
-    if (audioCtx) return
+    if (audioCtx) {
+      if (audioCtx.state === "suspended") {
+        try { audioCtx.resume() } catch (e) { /* ignore */ }
+      }
+      return
+    }
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)()
     } catch (e) {
@@ -144,7 +149,7 @@
       s.blink += s.blinkSpeed * dt
       var alpha = s.a * (0.5 + 0.5 * Math.sin(s.blink))
       ctx.beginPath()
-      ctx.arc(s.x % W, s.y % H, s.r, 0, Math.PI * 2)
+      ctx.arc((s.x % W + W) % W, (s.y % H + H) % H, s.r, 0, Math.PI * 2)
       ctx.fillStyle = "rgba(255,255,255," + alpha + ")"
       ctx.fill()
     }
@@ -258,6 +263,7 @@
   var score = 0
   var highScore = 0
   var combo = 0
+  var lastDt = 0.016
   var bestCombo = 0
   var orbitSpeed = BASE_ORBIT_SPEED
   var orbitRadius = BASE_ORBIT_RADIUS
@@ -413,7 +419,7 @@
     } else if (state === STATE_PLAY) {
       launchPlayer()
     } else if (state === STATE_DEAD) {
-      state = STATE_MENU
+      resetGame()
     }
   }
 
@@ -422,6 +428,7 @@
     handleInput()
   })
   document.addEventListener("keydown", function (e) {
+    if (e.repeat) return
     if (e.code === "Space" || e.key === " ") {
       e.preventDefault()
       handleInput()
@@ -430,6 +437,13 @@
 
   // ─── Update logic ─────────────────────────────────────────
   function update(dt) {
+    // Allow visual effects to continue animating during death screen
+    if (state === STATE_DEAD) {
+      if (shakeTime > 0) shakeTime -= dt
+      updateParticles(dt)
+      updatePopups(dt)
+      return
+    }
     if (state !== STATE_PLAY) return
 
     // Update shake
@@ -560,7 +574,7 @@
     ctx.fillRect(0, 0, W, H)
 
     // Stars (no camera offset - parallax effect)
-    drawStars(0.016)
+    drawStars(lastDt)
 
     // Apply camera + shake
     ctx.save()
@@ -931,6 +945,7 @@
 
     // Avoid huge first frame
     if (dt <= 0 || dt > 0.2) dt = 0.016
+    lastDt = dt
 
     update(dt)
     draw()
