@@ -1,0 +1,12 @@
+{
+  "id": "seat-the-weirdos",
+  "title": "Seat the Weirdos",
+  "description": "Place quirky passengers into bus seats and pray for a peaceful ride. Each weirdo has bizarre preferences and wild incompatibilities — seat them wisely or watch the chaos unfold!",
+  "category": "strategy",
+  "tags": ["canvas", "singleplayer", "puzzle", "humor"],
+  "author": "OpenArcades",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2026-03-29",
+  "controls": "Click or tap to select & place passengers"
+}
