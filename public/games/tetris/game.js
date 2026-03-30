@@ -15,6 +15,7 @@
   }
   window.addEventListener("resize", function () {
     resize()
+    calcLayout()
   })
   resize()
 
@@ -442,7 +443,7 @@
     var oldRot = current.rotation
     var newRot = (oldRot + direction + 4) % 4
     var kicks = current.type === "I" ? KICKS_I : KICKS_JLSTZ
-    var kickData = kicks[oldRot]
+    var kickData = direction === 1 ? kicks[oldRot] : kicks[newRot]
 
     for (var i = 0; i < kickData.length; i++) {
       var dc = kickData[i][0] * direction
@@ -630,7 +631,7 @@
   }
 
   // ─── Layout Calculations ──────────────────────────────────────────
-  var layout = {}
+  var layout
 
   function calcLayout() {
     var padding = Math.max(8, W * 0.02)
@@ -714,7 +715,6 @@
 
   // ─── Drawing ──────────────────────────────────────────────────────
   function draw() {
-    calcLayout()
     ctx.fillStyle = CLR.bg
     ctx.fillRect(0, 0, W, H)
 
@@ -1045,10 +1045,11 @@
       for (var c = 0; c < COLS; c++) {
         if (board[clearingLines[i]][c] !== null) {
           var bx2 = bx + c * cs
-          var blockW = cs * (1 - shrink)
-          var offset = (cs - blockW) / 2
+          var renderW = cs * (1 - shrink) - 1
+          if (renderW <= 0) continue
+          var offset = (cs - renderW) / 2
           ctx.globalAlpha = 1 - progress
-          drawBlock(bx2 + offset, y + offset, blockW - 1, CLR[board[clearingLines[i]][c]])
+          drawBlock(bx2 + offset, y + offset, renderW, CLR[board[clearingLines[i]][c]])
           ctx.globalAlpha = 1
         }
       }
@@ -1229,6 +1230,20 @@
     }
   })
 
+  // Reset input state when window loses focus to prevent stuck keys
+  function resetInputState() {
+    keysDown = {}
+    dasDirection = 0
+    dasTimer = 0
+    dasActive = false
+    softDropping = false
+    touchActiveBtn = null
+  }
+  window.addEventListener("blur", resetInputState)
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) resetInputState()
+  })
+
   // ─── Input: Pointer / Touch ───────────────────────────────────────
   canvas.addEventListener("pointerdown", function (e) {
     e.preventDefault()
@@ -1325,5 +1340,6 @@
   }
 
   // ─── Start ─────────────────────────────────────────────────────────
+  calcLayout()
   requestAnimationFrame(gameLoop)
 })()
