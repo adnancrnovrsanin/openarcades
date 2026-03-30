@@ -631,7 +631,7 @@
   }
 
   // ─── Layout Calculations ──────────────────────────────────────────
-  var layout
+  var layout = {}
 
   function calcLayout() {
     var padding = Math.max(8, W * 0.02)
