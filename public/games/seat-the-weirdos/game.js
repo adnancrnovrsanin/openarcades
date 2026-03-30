@@ -243,8 +243,13 @@
 
   // ─── Layout Calculation ────────────────────────────────────
   // Returns all layout rects relative to current canvas size
+  // Adapts for portrait (mobile) vs landscape (desktop)
   function getLayout() {
-    var scale = Math.min(W / 800, H / 760)
+    var isPortrait = W < H
+    var scale = isPortrait
+      ? Math.min(W / 440, H / 820)
+      : Math.min(W / 800, H / 760)
+
     var busW = 260 * scale
     var busH = 400 * scale
     var busX = (W - busW) / 2
@@ -265,27 +270,61 @@
       }
     }
 
-    var cardW = 120 * scale
-    var cardH = 130 * scale
-    var cardGap = 12 * scale
-    var totalCardW = passengers.length * (cardW + cardGap) - cardGap
-    var cardStartX = (W - totalCardW) / 2
-    var cardY = busY + busH + 24 * scale
+    // Cards: adaptive grid that wraps on narrow screens
+    var cardGap = Math.round(10 * scale)
+    var cardW, cardH, cardsPerRow
+
+    if (isPortrait) {
+      var availW = W - 16
+      var minCardW = 70
+      cardsPerRow = Math.floor((availW + cardGap) / (minCardW + cardGap))
+      cardsPerRow = clamp(cardsPerRow, 2, passengers.length)
+      cardW = Math.floor((availW - (cardsPerRow - 1) * cardGap) / cardsPerRow)
+      cardH = Math.floor(cardW * 130 / 120)
+    } else {
+      cardW = Math.round(120 * scale)
+      cardH = Math.round(130 * scale)
+      cardsPerRow = passengers.length
+      var totalCardW = passengers.length * (cardW + cardGap) - cardGap
+      if (totalCardW > W * 0.95) {
+        cardsPerRow = Math.max(2, Math.floor((W * 0.95 + cardGap) / (cardW + cardGap)))
+      }
+    }
+
+    var numCardRows = Math.ceil(passengers.length / cardsPerRow)
+    var cardStartY = busY + busH + 28 * scale
+
+    // Cap card height to available vertical space
+    if (numCardRows > 0) {
+      var availH = H - cardStartY - 70 * scale
+      var maxCardH = Math.floor((availH - (numCardRows - 1) * cardGap) / numCardRows)
+      if (cardH > maxCardH && maxCardH > 30) {
+        var shrink = maxCardH / cardH
+        cardH = maxCardH
+        cardW = Math.floor(cardW * shrink)
+      }
+    }
 
     var cardRects = []
     for (var i = 0; i < passengers.length; i++) {
+      var row = Math.floor(i / cardsPerRow)
+      var col = i % cardsPerRow
+      var rowCount = Math.min(cardsPerRow, passengers.length - row * cardsPerRow)
+      var rowW = rowCount * cardW + (rowCount - 1) * cardGap
+      var rowStartX = (W - rowW) / 2
       cardRects.push({
-        x: cardStartX + i * (cardW + cardGap),
-        y: cardY,
+        x: rowStartX + col * (cardW + cardGap),
+        y: cardStartY + row * (cardH + cardGap),
         w: cardW,
         h: cardH
       })
     }
 
-    var btnW = 180 * scale
-    var btnH = 48 * scale
+    var lastRowBottom = cardStartY + numCardRows * (cardH + cardGap)
+    var btnW = Math.max(140, 180 * scale)
+    var btnH = Math.max(40, 48 * scale)
     var btnX = (W - btnW) / 2
-    var btnY = cardY + cardH + 20 * scale
+    var btnY = lastRowBottom + 8 * scale
 
     return {
       scale: scale,
@@ -524,38 +563,38 @@
     ctx.fillStyle = BG
     ctx.fillRect(0, 0, W, H)
 
-    var scale = Math.min(W / 800, H / 700)
+    var scale = (W < H) ? Math.min(W / 440, H / 700) : Math.min(W / 800, H / 700)
 
     // Bus emoji
-    var busSize = 80 * scale
+    var busSize = Math.max(40, 80 * scale)
     drawText("\uD83D\uDE8C", W / 2, H * 0.28 + Math.sin(titleBounce) * 8, Math.round(busSize) + "px sans-serif", TEXT_WHITE)
 
     // Title
-    var titleSize = Math.round(48 * scale)
+    var titleSize = Math.max(24, Math.round(48 * scale))
     drawShadowText("SEAT THE WEIRDOS", W / 2, H * 0.42, "bold " + titleSize + "px sans-serif", TITLE_COLOR, "#ff8800", 20)
 
     // Subtitle
-    var subSize = Math.round(18 * scale)
+    var subSize = Math.max(12, Math.round(18 * scale))
     drawText("Place quirky passengers. Pray for peace.", W / 2, H * 0.52, subSize + "px sans-serif", SUBTITLE_COLOR)
 
     // Instructions
-    var instrSize = Math.round(14 * scale)
+    var instrSize = Math.max(10, Math.round(14 * scale))
     drawText("\uD83D\uDC46 Click or tap passengers, then click or tap seats to place them", W / 2, H * 0.62, instrSize + "px sans-serif", TEXT_DIM)
     drawText("\uD83C\uDFAF Keep chaos low to survive the ride!", W / 2, H * 0.67, instrSize + "px sans-serif", TEXT_DIM)
 
     // Start button
     var pulse = 0.9 + Math.sin(titleBounce * 1.5) * 0.1
-    var btnW = 220 * scale * pulse
-    var btnH = 54 * scale * pulse
+    var btnW = Math.max(160, 220 * scale) * pulse
+    var btnH = Math.max(44, 54 * scale) * pulse
     var btnX = (W - btnW) / 2
     var btnY = H * 0.76 - btnH / 2
     roundRect(btnX, btnY, btnW, btnH, 12 * scale)
     ctx.fillStyle = hoverButton ? BUTTON_HOVER : BUTTON_BG
     ctx.fill()
-    drawText("START GAME", W / 2, H * 0.76, "bold " + Math.round(20 * scale) + "px sans-serif", BUTTON_TEXT)
+    drawText("START GAME", W / 2, H * 0.76, "bold " + Math.max(16, Math.round(20 * scale)) + "px sans-serif", BUTTON_TEXT)
 
     // Version
-    drawText("v1.0 \u00B7 OpenArcades", W / 2, H * 0.92, Math.round(11 * scale) + "px sans-serif", TEXT_DIM)
+    drawText("v1.0 \u00B7 OpenArcades", W / 2, H * 0.92, Math.max(9, Math.round(11 * scale)) + "px sans-serif", TEXT_DIM)
   }
 
   // ─── Draw Bus ──────────────────────────────────────────────
@@ -572,7 +611,7 @@
     ctx.stroke()
 
     // Bus top label
-    var labelSize = Math.round(14 * layout.scale)
+    var labelSize = Math.max(10, Math.round(14 * layout.scale))
     drawText("\uD83D\uDE8C Route " + (round + 1), bx + layout.busW / 2, by + 14 * layout.scale, "bold " + labelSize + "px sans-serif", TEXT_DIM)
 
     // Aisle
@@ -583,7 +622,7 @@
     // Row numbers
     for (var r = 0; r < BUS_ROWS; r++) {
       var ry = layout.seatRects[r * BUS_COLS].y + layout.seatH / 2
-      var numSize = Math.round(10 * layout.scale)
+      var numSize = Math.max(8, Math.round(10 * layout.scale))
       drawText("" + (r + 1), aisleX, ry, numSize + "px sans-serif", TEXT_DIM)
     }
   }
@@ -627,11 +666,11 @@
 
     if (passenger) {
       // Draw passenger emoji
-      var emojiSize = Math.round(28 * layout.scale)
+      var emojiSize = Math.max(16, Math.round(28 * layout.scale))
       drawText(passenger.archetype.emoji, sx + rect.w / 2, sy + rect.h * 0.38, emojiSize + "px sans-serif", TEXT_WHITE)
 
       // Draw name
-      var nameSize = Math.round(9 * layout.scale)
+      var nameSize = Math.max(7, Math.round(9 * layout.scale))
       drawText(passenger.archetype.name, sx + rect.w / 2, sy + rect.h * 0.72, nameSize + "px sans-serif", TEXT_WHITE, "center", rect.w - 4)
 
       // Trait color indicator
@@ -643,7 +682,7 @@
       // Empty seat indicator
       var col = idx % BUS_COLS
       var label = col === 0 ? "Window" : "Aisle"
-      var labelSize2 = Math.round(9 * layout.scale)
+      var labelSize2 = Math.max(7, Math.round(9 * layout.scale))
       drawText(label, sx + rect.w / 2, sy + rect.h / 2, labelSize2 + "px sans-serif", TEXT_DIM)
     }
   }
@@ -662,29 +701,33 @@
     ctx.globalAlpha = alpha
 
     // Card bg
-    roundRect(rect.x, rect.y, rect.w, rect.h, 10 * layout.scale)
+    roundRect(rect.x, rect.y, rect.w, rect.h, Math.round(rect.h * 0.08))
     ctx.fillStyle = isSelected ? CARD_SELECTED : CARD_BG
     ctx.fill()
     if (isSelected || isHover) {
       ctx.strokeStyle = isSelected ? p.archetype.color : CARD_BORDER
-      ctx.lineWidth = 2 * layout.scale
+      ctx.lineWidth = 2
       ctx.stroke()
     }
 
     // Emoji
-    var emojiSize = Math.round(32 * layout.scale)
-    drawText(p.archetype.emoji, rect.x + rect.w / 2, rect.y + 30 * layout.scale, emojiSize + "px sans-serif", TEXT_WHITE)
+    var emojiSize = Math.max(16, Math.round(rect.h * 0.25))
+    drawText(p.archetype.emoji, rect.x + rect.w / 2, rect.y + rect.h * 0.23, emojiSize + "px sans-serif", TEXT_WHITE)
 
     // Name
-    var nameSize = Math.round(10 * layout.scale)
-    drawText(p.archetype.name, rect.x + rect.w / 2, rect.y + 60 * layout.scale, "bold " + nameSize + "px sans-serif", p.archetype.color, "center", rect.w - 8)
+    var nameSize = Math.max(8, Math.round(rect.h * 0.077))
+    drawText(p.archetype.name, rect.x + rect.w / 2, rect.y + rect.h * 0.46, "bold " + nameSize + "px sans-serif", p.archetype.color, "center", rect.w - 8)
 
-    // Description
-    var descSize = Math.round(8 * layout.scale)
-    wrapText(p.archetype.desc, rect.x + rect.w / 2, rect.y + 78 * layout.scale, rect.w - 12 * layout.scale, 11 * layout.scale, descSize + "px sans-serif", TEXT_DIM)
+    // Description (hide on very small cards)
+    if (rect.h > 60) {
+      var descSize = Math.max(7, Math.round(rect.h * 0.062))
+      var descLineH = Math.round(rect.h * 0.085)
+      wrapText(p.archetype.desc, rect.x + rect.w / 2, rect.y + rect.h * 0.60, rect.w - 10, descLineH, descSize + "px sans-serif", TEXT_DIM)
+    }
 
     if (isPlaced) {
-      drawText("\u2713 Seated", rect.x + rect.w / 2, rect.y + rect.h - 14 * layout.scale, Math.round(10 * layout.scale) + "px sans-serif", CHAOS_LOW)
+      var placedSize = Math.max(8, Math.round(rect.h * 0.077))
+      drawText("\u2713 Seated", rect.x + rect.w / 2, rect.y + rect.h - rect.h * 0.11, placedSize + "px sans-serif", CHAOS_LOW)
     }
 
     ctx.restore()
@@ -715,13 +758,13 @@
 
   // ─── Draw Chaos Meter ──────────────────────────────────────
   function drawChaosMeter(layout) {
-    var mw = 200 * layout.scale
-    var mh = 20 * layout.scale
+    var mw = Math.max(120, 200 * layout.scale)
+    var mh = Math.max(16, 20 * layout.scale)
     var mx = W - mw - 20 * layout.scale
     var my = 14 * layout.scale
 
     // Label
-    var labelSize = Math.round(12 * layout.scale)
+    var labelSize = Math.max(9, Math.round(12 * layout.scale))
     drawText("CHAOS", mx - 40 * layout.scale, my + mh / 2, "bold " + labelSize + "px sans-serif", TEXT_DIM, "center")
 
     // Background
@@ -742,13 +785,13 @@
     }
 
     // Percentage
-    var pctSize = Math.round(10 * layout.scale)
+    var pctSize = Math.max(8, Math.round(10 * layout.scale))
     drawText(Math.round(chaos) + "%", mx + mw / 2, my + mh / 2, "bold " + pctSize + "px sans-serif", TEXT_WHITE)
   }
 
   // ─── Draw HUD ──────────────────────────────────────────────
   function drawHUD(layout) {
-    var hudSize = Math.round(14 * layout.scale)
+    var hudSize = Math.max(10, Math.round(14 * layout.scale))
     drawText("Round " + (round + 1), 20 * layout.scale, 24 * layout.scale, "bold " + hudSize + "px sans-serif", TEXT_WHITE, "left")
     drawText("Score: " + totalScore, 20 * layout.scale, 44 * layout.scale, hudSize + "px sans-serif", SUBTITLE_COLOR, "left")
     drawChaosMeter(layout)
@@ -768,7 +811,8 @@
 
       ctx.save()
       ctx.globalAlpha = e.alpha
-      var fontSize = Math.round(11 * Math.min(W / 800, H / 700))
+      var eventScale = (W < H) ? Math.min(W / 440, H / 700) : Math.min(W / 800, H / 700)
+      var fontSize = Math.max(9, Math.round(11 * eventScale))
       ctx.font = "bold " + fontSize + "px sans-serif"
       var tw = ctx.measureText(e.text).width + 16
       var th = fontSize + 10
@@ -805,8 +849,8 @@
 
   // ─── Draw Ride Progress ────────────────────────────────────
   function drawRideProgress(layout) {
-    var pw = 200 * layout.scale
-    var ph = 8 * layout.scale
+    var pw = Math.max(120, 200 * layout.scale)
+    var ph = Math.max(6, 8 * layout.scale)
     var px = (W - pw) / 2
     var py = layout.busY + layout.busH + 10 * layout.scale
 
@@ -821,7 +865,7 @@
       ctx.fill()
     }
 
-    var labelSize = Math.round(10 * layout.scale)
+    var labelSize = Math.max(8, Math.round(10 * layout.scale))
     drawText("Ride: " + Math.round(pct * 100) + "%", W / 2, py + ph + 12 * layout.scale, labelSize + "px sans-serif", TEXT_DIM)
   }
 
@@ -839,7 +883,7 @@
     ctx.fillStyle = hoverButton ? BUTTON_HOVER : BUTTON_BG
     ctx.fill()
 
-    var fontSize = Math.round(16 * layout.scale)
+    var fontSize = Math.max(12, Math.round(16 * layout.scale))
     drawText("\uD83D\uDE80 START RIDE!", (bx + bw / 2), (by + bh / 2), "bold " + fontSize + "px sans-serif", BUTTON_TEXT)
   }
 
@@ -857,7 +901,7 @@
     }
 
     // Instruction
-    var instrSize = Math.round(12 * layout.scale)
+    var instrSize = Math.max(9, Math.round(12 * layout.scale))
     if (selectedPassenger >= 0) {
       drawText("\uD83D\uDC46 Now click or tap a seat to place " + passengers[selectedPassenger].archetype.name, W / 2, layout.busY + layout.busH + 12 * layout.scale, instrSize + "px sans-serif", SUBTITLE_COLOR)
     } else if (!allPlaced()) {
@@ -916,15 +960,15 @@
     ctx.fillStyle = BG
     ctx.fillRect(0, 0, W, H)
 
-    var scale = Math.min(W / 800, H / 700)
+    var scale = (W < H) ? Math.min(W / 440, H / 700) : Math.min(W / 800, H / 700)
     titleBounce += dt * 2
 
     // Title
-    var titleSize = Math.round(36 * scale)
+    var titleSize = Math.max(20, Math.round(36 * scale))
     drawShadowText("RIDE COMPLETE!", W / 2, H * 0.18, "bold " + titleSize + "px sans-serif", CHAOS_LOW, "#00ff88", 15)
 
     // Stars
-    var starSize = Math.round(40 * scale)
+    var starSize = Math.max(24, Math.round(40 * scale))
     var stars = ""
     for (var i = 0; i < 3; i++) {
       stars += i < resultStars ? "\u2B50" : "\u2606"
@@ -932,31 +976,31 @@
     drawText(stars, W / 2, H * 0.30, starSize + "px sans-serif", TITLE_COLOR)
 
     // Stats
-    var statSize = Math.round(16 * scale)
+    var statSize = Math.max(12, Math.round(16 * scale))
     drawText("Chaos Level: " + Math.round(chaos) + "%", W / 2, H * 0.42, statSize + "px sans-serif", chaos < 40 ? CHAOS_LOW : chaos < 70 ? CHAOS_MID : CHAOS_HIGH)
 
     var roundScore = calculateScore()
     drawText("Round Score: +" + roundScore, W / 2, H * 0.50, statSize + "px sans-serif", SUBTITLE_COLOR)
-    drawText("Total Score: " + totalScore, W / 2, H * 0.58, "bold " + Math.round(20 * scale) + "px sans-serif", TITLE_COLOR)
+    drawText("Total Score: " + totalScore, W / 2, H * 0.58, "bold " + Math.max(14, Math.round(20 * scale)) + "px sans-serif", TITLE_COLOR)
 
     // Funny comment
     var comment = ""
     if (resultStars === 3) comment = pick(["Flawless ride! Are you a bus whisperer?", "The passengers actually THANKED you!", "Not a single complaint. Legendary.", "Peak bus harmony. \u2728"])
     else if (resultStars === 2) comment = pick(["Pretty smooth! Only minor incidents.", "Mostly peaceful. The bus survived!", "Could be worse. The cat only hissed twice.", "Decent vibes overall!"])
     else comment = pick(["Well... the bus made it. Barely.", "Multiple complaints were filed.", "The driver is requesting hazard pay.", "Chaos reigned. But you lived!"])
-    var commentSize = Math.round(13 * scale)
+    var commentSize = Math.max(10, Math.round(13 * scale))
     drawText(comment, W / 2, H * 0.68, commentSize + "px sans-serif", TEXT_DIM)
 
     // Next round button
     var pulse = 0.95 + Math.sin(titleBounce * 1.5) * 0.05
-    var btnW = 220 * scale * pulse
-    var btnH = 50 * scale * pulse
+    var btnW = Math.max(160, 220 * scale) * pulse
+    var btnH = Math.max(44, 50 * scale) * pulse
     var btnX = (W - btnW) / 2
     var btnY = H * 0.78 - btnH / 2
     roundRect(btnX, btnY, btnW, btnH, 12 * scale)
     ctx.fillStyle = hoverButton ? BUTTON_HOVER : BUTTON_BG
     ctx.fill()
-    drawText("NEXT ROUND \u2192", W / 2, H * 0.78, "bold " + Math.round(18 * scale) + "px sans-serif", BUTTON_TEXT)
+    drawText("NEXT ROUND \u2192", W / 2, H * 0.78, "bold " + Math.max(14, Math.round(18 * scale)) + "px sans-serif", BUTTON_TEXT)
   }
 
   // ─── Draw Game Over Screen ─────────────────────────────────
@@ -964,23 +1008,23 @@
     ctx.fillStyle = BG
     ctx.fillRect(0, 0, W, H)
 
-    var scale = Math.min(W / 800, H / 700)
+    var scale = (W < H) ? Math.min(W / 440, H / 700) : Math.min(W / 800, H / 700)
     titleBounce += dt * 2
 
     // Title
-    var titleSize = Math.round(40 * scale)
+    var titleSize = Math.max(22, Math.round(40 * scale))
     drawShadowText("BUS BREAKDOWN!", W / 2, H * 0.18, "bold " + titleSize + "px sans-serif", CHAOS_HIGH, "#ff4444", 20)
 
     // Chaos explosion emoji
-    var emojiSize = Math.round(60 * scale)
+    var emojiSize = Math.max(30, Math.round(60 * scale))
     drawText("\uD83D\uDE31\uD83D\uDE8C\uD83D\uDCA5", W / 2, H * 0.32, emojiSize + "px sans-serif", TEXT_WHITE)
 
     // Stats
-    var statSize = Math.round(16 * scale)
+    var statSize = Math.max(12, Math.round(16 * scale))
     drawText("Maximum chaos reached!", W / 2, H * 0.44, statSize + "px sans-serif", CHAOS_HIGH)
     drawText("You survived " + round + " round" + (round !== 1 ? "s" : ""), W / 2, H * 0.52, statSize + "px sans-serif", TEXT_DIM)
 
-    var scoreSize = Math.round(24 * scale)
+    var scoreSize = Math.max(16, Math.round(24 * scale))
     drawText("Final Score: " + totalScore, W / 2, H * 0.62, "bold " + scoreSize + "px sans-serif", TITLE_COLOR)
 
     // Funny game over message
@@ -992,19 +1036,19 @@
       "The cats and dog have formed an alliance. Against you.",
       "The snoring was heard three blocks away."
     ])
-    var msgSize = Math.round(13 * scale)
+    var msgSize = Math.max(10, Math.round(13 * scale))
     drawText(msg, W / 2, H * 0.72, msgSize + "px sans-serif", TEXT_DIM)
 
     // Restart button
     var pulse = 0.95 + Math.sin(titleBounce * 1.5) * 0.05
-    var btnW = 220 * scale * pulse
-    var btnH = 50 * scale * pulse
+    var btnW = Math.max(160, 220 * scale) * pulse
+    var btnH = Math.max(44, 50 * scale) * pulse
     var btnX = (W - btnW) / 2
     var btnY = H * 0.82 - btnH / 2
     roundRect(btnX, btnY, btnW, btnH, 12 * scale)
     ctx.fillStyle = hoverButton ? "#cc4444" : "#aa3333"
     ctx.fill()
-    drawText("\uD83D\uDD04 TRY AGAIN", W / 2, H * 0.82, "bold " + Math.round(18 * scale) + "px sans-serif", BUTTON_TEXT)
+    drawText("\uD83D\uDD04 TRY AGAIN", W / 2, H * 0.82, "bold " + Math.max(14, Math.round(18 * scale)) + "px sans-serif", BUTTON_TEXT)
   }
 
   // ─── Tooltip ───────────────────────────────────────────────
@@ -1017,11 +1061,12 @@
     var rect = layout.seatRects[hoverSeat]
     var tx = rect.x + rect.w + 10 * layout.scale + busBounceX
     var ty = rect.y + busBounceY
-    var tw = 160 * layout.scale
-    var th = 70 * layout.scale
+    var tw = Math.max(120, 160 * layout.scale)
+    var th = Math.max(55, 70 * layout.scale)
 
     // Keep tooltip on screen
     if (tx + tw > W) tx = rect.x - tw - 10 * layout.scale + busBounceX
+    if (tx < 0) tx = 4
 
     ctx.save()
     ctx.globalAlpha = 0.95
@@ -1033,13 +1078,13 @@
     ctx.stroke()
     ctx.globalAlpha = 1
 
-    var nameSize = Math.round(11 * layout.scale)
+    var nameSize = Math.max(9, Math.round(11 * layout.scale))
     drawText(passenger.archetype.emoji + " " + passenger.archetype.name, tx + tw / 2, ty + 16 * layout.scale, "bold " + nameSize + "px sans-serif", passenger.archetype.color)
 
-    var descSize = Math.round(9 * layout.scale)
+    var descSize = Math.max(7, Math.round(9 * layout.scale))
     wrapText(passenger.archetype.desc, tx + tw / 2, ty + 30 * layout.scale, tw - 12, 12 * layout.scale, descSize + "px sans-serif", TEXT_DIM)
 
-    var hintSize = Math.round(8 * layout.scale)
+    var hintSize = Math.max(7, Math.round(8 * layout.scale))
     var hintText = selectedPassenger < 0 ? "Click to remove" : "Deselect passenger to remove"
     drawText(hintText, tx + tw / 2, ty + th - 10 * layout.scale, hintSize + "px sans-serif", "#ff8888")
     ctx.restore()
@@ -1162,9 +1207,9 @@
       }
     } else if (state === STATE_TITLE || state === STATE_RESULTS || state === STATE_GAMEOVER) {
       // Check button areas
-      var scale = Math.min(W / 800, H / 700)
-      var btnW2 = 220 * scale
-      var btnH2 = 54 * scale
+      var scale = (W < H) ? Math.min(W / 440, H / 700) : Math.min(W / 800, H / 700)
+      var btnW2 = Math.max(160, 220 * scale)
+      var btnH2 = Math.max(44, 54 * scale)
       var btnX2, btnY2
       if (state === STATE_TITLE) {
         btnX2 = (W - btnW2) / 2; btnY2 = H * 0.76 - btnH2 / 2
