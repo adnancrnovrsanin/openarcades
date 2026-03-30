@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, Moon, Sun, Gamepad2 } from "lucide-react"
+import { Menu, Moon, Sun, Gamepad2, BookOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,7 +11,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { docsConfig } from "@/lib/docs.config"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState } from "react"
 
 function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -98,33 +101,80 @@ export function SiteHeader() {
               <Menu />
               <span className="sr-only">Menu</span>
             </SheetTrigger>
-            <SheetContent side="right">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
-              <nav className="flex flex-col gap-4 pt-8">
-                {navItems.map((item) => (
+            <SheetContent side="right" className="w-72 p-0">
+              <SheetTitle className="border-b px-4 py-3 text-sm font-semibold">
+                Navigation
+              </SheetTitle>
+              <ScrollArea className="h-[calc(100svh-49px)]">
+                <div className="flex flex-col gap-1 p-3">
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    href="/games"
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "text-lg transition-colors hover:text-foreground",
-                      pathname.startsWith(item.href)
-                        ? "font-medium text-foreground"
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                      pathname.startsWith("/games")
+                        ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground"
                     )}
                   >
-                    {item.label}
+                    <Gamepad2 className="size-4" />
+                    Games
                   </Link>
-                ))}
-                <a
-                  href="https://github.com/openarcades/openarcades"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-lg text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  GitHub
-                </a>
-              </nav>
+                  <Link
+                    href="/docs"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                      pathname.startsWith("/docs")
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    <BookOpen className="size-4" />
+                    Documentation
+                  </Link>
+                  <a
+                    href="https://github.com/openarcades/openarcades"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <GitHubIcon className="size-4" />
+                    GitHub
+                  </a>
+                </div>
+                {pathname.startsWith("/docs") && (
+                  <>
+                    <Separator />
+                    <nav className="flex flex-col gap-4 p-3">
+                      {docsConfig.map((section) => (
+                        <div key={section.title}>
+                          <h4 className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {section.title}
+                          </h4>
+                          <div className="flex flex-col gap-0.5">
+                            {section.pages.map((page) => (
+                              <Link
+                                key={page.slug}
+                                href={page.href}
+                                onClick={() => setOpen(false)}
+                                className={cn(
+                                  "rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                                  pathname === page.href
+                                    ? "bg-accent font-medium text-accent-foreground"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {page.title}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </nav>
+                  </>
+                )}
+              </ScrollArea>
             </SheetContent>
           </Sheet>
         </div>
