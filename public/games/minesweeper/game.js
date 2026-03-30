@@ -800,15 +800,15 @@
     hoverC = -1
   })
 
+  // ─── Long-press state (Pointer Events) ──────────────────────────────
+  var longPressTimer = null
+  var longPressPos = null
+  var longPressFired = false
+  var LONG_PRESS_MS = 400
+
   canvas.addEventListener("pointerdown", function (e) {
     e.preventDefault()
     ensureAudio()
-
-    // If a long-press just fired a flag, skip this event
-    if (longPressFired) {
-      longPressFired = false
-      return
-    }
 
     var rect = canvas.getBoundingClientRect()
     var px = (e.clientX - rect.left) * (canvas.width / rect.width)
@@ -838,7 +838,21 @@
       return
     }
 
-    // Left-click → reveal or chord (if already revealed)
+    // Touch: defer reveal to pointerup; start long-press timer for flagging
+    if (e.pointerType === "touch" && e.button === 0) {
+      longPressFired = false
+      longPressPos = pos
+      longPressTimer = setTimeout(function () {
+        if (longPressPos) {
+          toggleFlag(longPressPos.r, longPressPos.c)
+          longPressFired = true
+          longPressPos = null
+        }
+      }, LONG_PRESS_MS)
+      return
+    }
+
+    // Mouse left-click → reveal or chord (if already revealed)
     if (e.button === 0) {
       var cell = board[pos.r][pos.c]
       if (cell.state === CELL_REVEALED && cell.adjacent > 0) {
@@ -864,10 +878,11 @@
   document.addEventListener("keydown", function (e) {
     if (state === STATE_MENU) {
       // Quick start with number keys
-      if (e.key === "1") { startGame("beginner"); return }
-      if (e.key === "2") { startGame("intermediate"); return }
-      if (e.key === "3") { startGame("expert"); return }
+      if (e.key === "1") { e.preventDefault(); startGame("beginner"); return }
+      if (e.key === "2") { e.preventDefault(); startGame("intermediate"); return }
+      if (e.key === "3") { e.preventDefault(); startGame("expert"); return }
       if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
         startGame("beginner")
         return
       }
@@ -969,49 +984,53 @@
     return false
   }
 
-  // ─── Long-press for flag on touch devices ──────────────────────────
-  var longPressTimer = null
-  var longPressPos = null
-  var longPressFired = false
-  var LONG_PRESS_MS = 400
+  // ─── Long-press pointer event handlers ──────────────────────────────
 
-  canvas.addEventListener("touchstart", function (e) {
-    if (state !== STATE_PLAYING) return
-    if (e.touches.length !== 1) return
-    var touch = e.touches[0]
-    var rect = canvas.getBoundingClientRect()
-    var px = (touch.clientX - rect.left) * (canvas.width / rect.width)
-    var py = (touch.clientY - rect.top) * (canvas.height / rect.height)
-    var pos = getCellFromPoint(px, py)
-    if (!pos) return
+  canvas.addEventListener("pointerup", function (e) {
+    // Complete touch reveal on pointerup if long-press didn't fire
+    if (e.pointerType === "touch" && state === STATE_PLAYING) {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+      }
+      if (!longPressFired && longPressPos) {
+        var pos = longPressPos
+        longPressPos = null
+        var cell = board[pos.r][pos.c]
+        if (cell.state === CELL_REVEALED && cell.adjacent > 0) {
+          chordReveal(pos.r, pos.c)
+        } else {
+          revealCell(pos.r, pos.c)
+        }
+      }
+      longPressPos = null
+      longPressFired = false
+    }
+  })
 
+  canvas.addEventListener("pointercancel", function () {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+    longPressPos = null
     longPressFired = false
-    longPressPos = pos
-    longPressTimer = setTimeout(function () {
-      if (longPressPos) {
-        ensureAudio()
-        toggleFlag(longPressPos.r, longPressPos.c)
-        longPressFired = true // suppress the subsequent pointerdown reveal
+  })
+
+  canvas.addEventListener("pointermove", function (e) {
+    // Cancel long-press if touch moves too far from original cell
+    if (e.pointerType === "touch" && longPressPos && longPressTimer) {
+      var rect = canvas.getBoundingClientRect()
+      var px = (e.clientX - rect.left) * (canvas.width / rect.width)
+      var py = (e.clientY - rect.top) * (canvas.height / rect.height)
+      var pos = getCellFromPoint(px, py)
+      if (!pos || pos.r !== longPressPos.r || pos.c !== longPressPos.c) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
         longPressPos = null
       }
-    }, LONG_PRESS_MS)
-  }, { passive: true })
-
-  canvas.addEventListener("touchend", function () {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
     }
-    longPressPos = null
-  }, { passive: true })
-
-  canvas.addEventListener("touchmove", function () {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
-    longPressPos = null
-  }, { passive: true })
+  })
 
   // ─── Game Loop ─────────────────────────────────────────────────────
 
