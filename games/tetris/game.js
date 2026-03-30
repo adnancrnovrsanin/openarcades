@@ -340,7 +340,7 @@
   }
 
   function getGhostRow() {
-    if (!current) return current.row
+    if (!current) return 0
     var r = current.row
     while (isValid(current.type, current.rotation, r + 1, current.col)) {
       r++
@@ -478,6 +478,10 @@
     placePiece()
     sfxLock()
 
+    // Clear old piece before spawning / starting clear animation
+    current = null
+    isLocking = false
+
     // Check for line clears
     var full = findFullLines()
     if (full.length > 0) {
@@ -487,8 +491,6 @@
     } else {
       spawnPiece()
     }
-    current = null
-    isLocking = false
   }
 
   function holdCurrentPiece() {
