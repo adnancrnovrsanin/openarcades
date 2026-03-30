@@ -1,0 +1,12 @@
+{
+  "id": "tetris",
+  "title": "Tetris",
+  "description": "The legendary block-stacking puzzle game. Rotate and place falling tetrominoes to clear lines, score points, and survive as the speed increases. Features ghost piece, hold, and next-piece preview.",
+  "category": "puzzle",
+  "tags": ["canvas", "singleplayer", "puzzle", "classic", "arcade"],
+  "author": "OpenArcades",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2026-03-30",
+  "controls": "← → to move · ↑ to rotate · ↓ soft drop · Space hard drop · C hold · P pause · Enter restart"
+}
