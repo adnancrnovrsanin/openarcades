@@ -540,7 +540,7 @@
 
     // Instructions
     var instrSize = Math.round(14 * scale)
-    drawText("\uD83D\uDC46 Click passengers, then click seats to place them", W / 2, H * 0.62, instrSize + "px sans-serif", TEXT_DIM)
+    drawText("\uD83D\uDC46 Click or tap passengers, then click or tap seats to place them", W / 2, H * 0.62, instrSize + "px sans-serif", TEXT_DIM)
     drawText("\uD83C\uDFAF Keep chaos low to survive the ride!", W / 2, H * 0.67, instrSize + "px sans-serif", TEXT_DIM)
 
     // Start button
@@ -859,9 +859,9 @@
     // Instruction
     var instrSize = Math.round(12 * layout.scale)
     if (selectedPassenger >= 0) {
-      drawText("\uD83D\uDC46 Now click a seat to place " + passengers[selectedPassenger].archetype.name, W / 2, layout.busY + layout.busH + 12 * layout.scale, instrSize + "px sans-serif", SUBTITLE_COLOR)
+      drawText("\uD83D\uDC46 Now click or tap a seat to place " + passengers[selectedPassenger].archetype.name, W / 2, layout.busY + layout.busH + 12 * layout.scale, instrSize + "px sans-serif", SUBTITLE_COLOR)
     } else if (!allPlaced()) {
-      drawText("\uD83D\uDC47 Select a passenger below, then click a seat", W / 2, layout.busY + layout.busH + 12 * layout.scale, instrSize + "px sans-serif", TEXT_DIM)
+      drawText("\uD83D\uDC47 Select a passenger below, then click or tap a seat", W / 2, layout.busY + layout.busH + 12 * layout.scale, instrSize + "px sans-serif", TEXT_DIM)
     }
 
     for (var j = 0; j < passengers.length; j++) {
@@ -1040,7 +1040,8 @@
     wrapText(passenger.archetype.desc, tx + tw / 2, ty + 30 * layout.scale, tw - 12, 12 * layout.scale, descSize + "px sans-serif", TEXT_DIM)
 
     var hintSize = Math.round(8 * layout.scale)
-    drawText("Click to remove", tx + tw / 2, ty + th - 10 * layout.scale, hintSize + "px sans-serif", "#ff8888")
+    var hintText = selectedPassenger < 0 ? "Click to remove" : "Deselect passenger to remove"
+    drawText(hintText, tx + tw / 2, ty + th - 10 * layout.scale, hintSize + "px sans-serif", "#ff8888")
     ctx.restore()
   }
 
@@ -1274,10 +1275,8 @@
     }
   }
 
-  canvas.addEventListener("mousemove", handleMove)
-  canvas.addEventListener("click", handleClick)
-  canvas.addEventListener("touchstart", function(e) { e.preventDefault(); handleClick(e) }, { passive: false })
-  canvas.addEventListener("touchmove", function(e) { e.preventDefault(); handleMove(e) }, { passive: false })
+  canvas.addEventListener("pointermove", function(e) { e.preventDefault(); handleMove(e) }, { passive: false })
+  canvas.addEventListener("pointerdown", function(e) { e.preventDefault(); handleClick(e) }, { passive: false })
 
   // Prevent context menu
   canvas.addEventListener("contextmenu", function(e) { e.preventDefault() })
