@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import dynamic from "next/dynamic"
 import { Menu, Moon, Sun, Gamepad2, BookOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -11,11 +12,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { docsConfig } from "@/lib/docs.config"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState } from "react"
+
+const SheetDocsNav = dynamic(
+  () =>
+    import("@/components/sheet-docs-nav").then((mod) => mod.SheetDocsNav),
+  { ssr: false }
+)
 
 function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -102,7 +107,7 @@ export function SiteHeader() {
               <span className="sr-only">Menu</span>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 p-0">
-              <SheetTitle className="border-b px-4 py-3 text-sm font-semibold">
+              <SheetTitle className="border-b px-4 py-3 pe-10 text-sm font-semibold">
                 Navigation
               </SheetTitle>
               <ScrollArea className="h-[calc(100svh-49px)]">
@@ -138,41 +143,17 @@ export function SiteHeader() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => setOpen(false)}
                   >
                     <GitHubIcon className="size-4" />
                     GitHub
                   </a>
                 </div>
                 {pathname.startsWith("/docs") && (
-                  <>
-                    <Separator />
-                    <nav className="flex flex-col gap-4 p-3">
-                      {docsConfig.map((section) => (
-                        <div key={section.title}>
-                          <h4 className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            {section.title}
-                          </h4>
-                          <div className="flex flex-col gap-0.5">
-                            {section.pages.map((page) => (
-                              <Link
-                                key={page.slug}
-                                href={page.href}
-                                onClick={() => setOpen(false)}
-                                className={cn(
-                                  "rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
-                                  pathname === page.href
-                                    ? "bg-accent font-medium text-accent-foreground"
-                                    : "text-muted-foreground"
-                                )}
-                              >
-                                {page.title}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </nav>
-                  </>
+                  <SheetDocsNav
+                    pathname={pathname}
+                    onNavigate={() => setOpen(false)}
+                  />
                 )}
               </ScrollArea>
             </SheetContent>

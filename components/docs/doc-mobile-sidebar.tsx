@@ -30,7 +30,7 @@ export function DocMobileSidebar() {
         Menu
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0">
-        <SheetTitle className="border-b px-4 py-3 text-sm font-semibold">
+        <SheetTitle className="border-b px-4 py-3 pr-10 text-sm font-semibold">
           Documentation
         </SheetTitle>
         <ScrollArea className="h-[calc(100svh-49px)]">
