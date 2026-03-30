@@ -1,0 +1,12 @@
+{
+  "id": "minesweeper",
+  "title": "Minesweeper",
+  "description": "The classic puzzle game! Reveal cells, place flags, and use numbered clues to clear the board without hitting a mine. Choose from Beginner, Intermediate, or Expert difficulty.",
+  "category": "puzzle",
+  "tags": ["canvas", "singleplayer", "puzzle", "classic"],
+  "author": "OpenArcades",
+  "version": "1.0.0",
+  "license": "MIT",
+  "createdAt": "2026-03-30",
+  "controls": "Left-click to reveal · Right-click to flag · Choose difficulty from the menu"
+}
